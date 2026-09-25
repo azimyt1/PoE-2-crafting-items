@@ -1,0 +1,316 @@
+// Parses an item copied from the game with Ctrl+C or Ctrl+Alt+C
+// (advanced mod descriptions). English and Russian clients are supported.
+
+import type { BaseDef, ItemMod, ModDef, Rarity, Side } from './types';
+
+export interface RuData {
+  /** Russian line template -> English line template */
+  templates: Record<string, string>;
+  /** Russian base name -> English base name */
+  bases: Record<string, string>;
+}
+
+export interface ParsedMod {
+  mod: ItemMod;
+  def: ModDef;
+  lines: string[];
+}
+
+export interface ParsedItem {
+  itemClass: string;
+  rarity: Rarity | 'unique' | 'other';
+  baseName: string;
+  base: BaseDef | null;
+  ilvl: number | null;
+  mods: ParsedMod[];
+  unmatched: string[];
+  corrupted: boolean;
+  unidentified: boolean;
+  advanced: boolean;
+  language: 'en' | 'ru';
+}
+
+/** Must stay identical to template() in scripts/build-data.mjs */
+export function template(line: string): string {
+  return line
+    .replace(/\(-?\d+(?:\.\d+)?-(-?\d+(?:\.\d+)?)\)/g, '#')
+    .replace(/[+-]?\d+(?:[.,]\d+)?/g, '#')
+    .replace(/[+-]#/g, '#')
+    .replace(/#\s*#/g, '#')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+const SEP = /^-{4,}$/;
+const RARITY: Record<string, ParsedItem['rarity']> = {
+  normal: 'normal',
+  magic: 'magic',
+  rare: 'rare',
+  unique: 'unique',
+  обычный: 'normal',
+  волшебный: 'magic',
+  редкий: 'rare',
+  уникальный: 'unique',
+};
+const TAIL_FLAGS = /\s*\((fractured|desecrated|crafted|implicit|rune|enchant|augmented|расколото|очернено|собственное|руна|зачарование)\)\s*$/i;
+
+/** Numbers shown on a line, and the "(min-max)" ranges from advanced copy. */
+function numbers(line: string): { values: number[]; ranges: [number, number][] } {
+  const ranges: [number, number][] = [];
+  const stripped = line.replace(/\((-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\)/g, (_, a, b) => {
+    ranges.push([parseFloat(a), parseFloat(b)]);
+    return '';
+  });
+  const values = (stripped.match(/-?\d+(?:[.,]\d+)?/g) ?? []).map((x) => parseFloat(x.replace(',', '.')));
+  return { values, ranges };
+}
+
+/** Ranges written in a modifier's text, in order, e.g. "+(36-40)%" -> [[36,40]]. Fixed numbers become [n,n]. */
+function modRanges(text: string): [number, number][] {
+  const out: [number, number][] = [];
+  const re = /\((-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)\)|(-?\d+(?:\.\d+)?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    if (m[1] !== undefined) out.push([parseFloat(m[1]), parseFloat(m[2])]);
+    else out.push([parseFloat(m[3]), parseFloat(m[3])]);
+  }
+  return out;
+}
+
+export class ItemParser {
+  private byTemplate = new Map<string, ModDef[]>();
+  private basesByName = new Map<string, BaseDef[]>();
+
+  constructor(
+    bases: BaseDef[],
+    mods: ModDef[],
+    private ru?: RuData,
+  ) {
+    for (const m of mods) {
+      const key = m.x.split('\n').map(template).sort().join('\n');
+      const list = this.byTemplate.get(key);
+      if (list) list.push(m);
+      else this.byTemplate.set(key, [m]);
+    }
+    for (const b of bases) {
+      const list = this.basesByName.get(b.name);
+      if (list) list.push(b);
+      else this.basesByName.set(b.name, [b]);
+    }
+  }
+
+  /** English template for a game line (translating Russian if needed). */
+  private tpl(line: string): string {
+    const t = template(line);
+    if (this.ru && /[а-яё]/i.test(line)) return this.ru.templates[t] ?? t;
+    return t;
+  }
+
+  private findBase(nameLines: string[], implicitText: string[], ru: boolean): { base: BaseDef | null; name: string } {
+    const toEn = (s: string) => (ru && this.ru ? this.ru.bases[s] ?? s : s);
+    const pick = (name: string): BaseDef | null => {
+      const list = this.basesByName.get(name);
+      if (!list) return null;
+      if (list.length === 1 || !implicitText.length) return list[0];
+      const imp = implicitText.map(template);
+      return list.find((b) => b.imp.some((x) => imp.includes(template(x)))) ?? list[0];
+    };
+    // exact line (normal / rare)
+    for (let i = nameLines.length - 1; i >= 0; i--) {
+      const b = pick(toEn(nameLines[i]));
+      if (b) return { base: b, name: b.name };
+    }
+    // magic: base name inside "Prefix Base of Suffix"
+    const line = (nameLines[nameLines.length - 1] ?? '').toLowerCase();
+    let best: string | null = null;
+    const names = ru && this.ru ? Object.keys(this.ru.bases) : [...this.basesByName.keys()];
+    for (const n of names) if (line.includes(n.toLowerCase()) && (!best || n.length > best.length)) best = n;
+    if (best) {
+      const b = pick(toEn(best));
+      return { base: b, name: b?.name ?? best };
+    }
+    return { base: null, name: line };
+  }
+
+  /** Choose the tier whose ranges fit the numbers best. */
+  private chooseTier(cands: ModDef[], lines: string[], opts: { side?: Side; name?: string; tier?: number; pool?: Set<string> }): ModDef | null {
+    let list = cands;
+    if (opts.side) list = list.filter((m) => m.s === opts.side);
+    if (!list.length) return null;
+    const parsed = lines.map((l) => ({ t: this.tpl(l), ...numbers(l) }));
+    const score = (m: ModDef): number => {
+      let s = 0;
+      const modLines = m.x.split('\n').map((x) => ({ t: template(x), r: modRanges(x) }));
+      for (const pl of parsed) {
+        const ml = modLines.find((x) => x.t === pl.t);
+        if (!ml) continue;
+        // advanced copy prints the tier range: exact identification
+        const ranged = ml.r.filter((r) => r[0] !== r[1]);
+        for (const r of pl.ranges)
+          if (ranged.some((x) => Math.min(x[0], x[1]) === Math.min(r[0], r[1]) && Math.max(x[0], x[1]) === Math.max(r[0], r[1]))) s += 30;
+        // rolled values inside the tier range
+        for (let i = 0; i < Math.min(ml.r.length, pl.values.length); i++) {
+          const lo = Math.min(ml.r[i][0], ml.r[i][1]);
+          const hi = Math.max(ml.r[i][0], ml.r[i][1]);
+          if (pl.values[i] >= lo - 1e-9 && pl.values[i] <= hi + 1e-9) s += 3;
+        }
+      }
+      if (opts.name && m.n === opts.name) s += 2;
+      if (opts.pool?.has(m.id)) s += 5;
+      return s;
+    };
+    let best: ModDef | null = null;
+    let bestScore = -1;
+    for (const m of list) {
+      const sc = score(m);
+      if (sc > bestScore || (sc === bestScore && best && m.l > best.l)) {
+        best = m;
+        bestScore = sc;
+      }
+    }
+    return best;
+  }
+
+  private candidates(lines: string[]): ModDef[] {
+    return this.byTemplate.get(lines.map((l) => this.tpl(l)).sort().join('\n')) ?? [];
+  }
+
+  parse(text: string, poolIds?: Set<string>): ParsedItem | null {
+    const raw = text.replace(/\r/g, '').split('\n').map((l) => l.trim());
+    const first = raw.findIndex((l) => /^(Item Class|Класс предмета):/i.test(l));
+    if (first < 0) return null;
+    const lines = raw.slice(first);
+    const ru = /^Класс предмета:/i.test(lines[0]);
+    const sections: string[][] = [[]];
+    for (const l of lines) {
+      if (SEP.test(l)) sections.push([]);
+      else if (l) sections[sections.length - 1].push(l);
+    }
+    const head = sections[0];
+    const itemClass = head[0].replace(/^[^:]+:\s*/, '');
+    const rarityWord = (head[1] ?? '').replace(/^[^:]+:\s*/, '').toLowerCase();
+    const rarity = RARITY[rarityWord] ?? 'other';
+    const nameLines = head.slice(2);
+
+    const flat = lines.filter((l) => l && !SEP.test(l));
+    const ilvlLine = flat.find((l) => /^(Item Level|Уровень предмета):/i.test(l));
+    const ilvl = ilvlLine ? parseInt(ilvlLine.replace(/\D+/g, ''), 10) || null : null;
+    const corrupted = flat.some((l) => /^(Corrupted|Осквернено)$/i.test(l));
+    const unidentified = flat.some((l) => /^(Unidentified|Неопознано)/i.test(l));
+    const advanced = flat.some((l) => /^\{.*\}$/.test(l));
+
+    // implicit lines (for telling apart bases with the same name)
+    const implicitText: string[] = [];
+    const out: ParsedItem = {
+      itemClass,
+      rarity,
+      baseName: '',
+      base: null,
+      ilvl,
+      mods: [],
+      unmatched: [],
+      corrupted,
+      unidentified,
+      advanced,
+      language: ru ? 'ru' : 'en',
+    };
+
+    if (advanced) {
+      type Block = { side?: Side; skip: boolean; fr: boolean; de: boolean; name?: string; tier?: number; lines: string[] };
+      let cur = null as Block | null;
+      const blocks: Block[] = [];
+      for (const sec of sections.slice(1)) {
+        for (const l of sec) {
+          const h = l.match(/^\{\s*(.+?)\s*\}$/);
+          if (h) {
+            const inner = h[1];
+            const type = inner.split('—')[0];
+            const name = type.match(/"([^"]+)"/)?.[1];
+            const tier = type.match(/\((?:Tier|Уровень):\s*(\d+)\)/)?.[1];
+            const isPrefix = /Prefix|Префикс/i.test(type);
+            const isSuffix = /Suffix|Суффикс/i.test(type);
+            const implicit = /Implicit|Собственное/i.test(type);
+            cur = {
+              side: isPrefix ? 'p' : isSuffix ? 's' : undefined,
+              skip: implicit || (!isPrefix && !isSuffix),
+              fr: /Fractured|Расколот/i.test(type),
+              de: /Desecrated|Очернён/i.test(type),
+              name,
+              tier: tier ? +tier : undefined,
+              lines: [],
+            };
+            if (!cur.skip) blocks.push(cur);
+            continue;
+          }
+          if (cur) {
+            if (cur.skip) {
+              implicitText.push(l.replace(TAIL_FLAGS, ''));
+              continue;
+            }
+            if (/\(fractured|расколото\)/i.test(l)) cur.fr = true;
+            if (/\(desecrated|очернено\)/i.test(l)) cur.de = true;
+            cur.lines.push(l.replace(TAIL_FLAGS, '').replace(TAIL_FLAGS, ''));
+          }
+        }
+        cur = null; // a section break ends the current block
+      }
+      const fb = this.findBase(nameLines, implicitText, ru);
+      out.base = fb.base;
+      out.baseName = fb.name;
+      for (const b of blocks) {
+        if (!b.lines.length) continue;
+        const def = this.chooseTier(this.candidates(b.lines), b.lines, { side: b.side, name: b.name, tier: b.tier, pool: poolIds });
+        if (def) out.mods.push({ def, lines: b.lines, mod: { id: def.id, ...(b.fr ? { fr: true } : {}), ...(b.de ? { de: true } : {}) } });
+        else out.unmatched.push(b.lines.join(' / '));
+      }
+    } else {
+      // simple copy: explicit lines follow the item level section
+      const ilvlSec = sections.findIndex((s) => s.some((l) => /^(Item Level|Уровень предмета):/i.test(l)));
+      const candidatesLines: { text: string; fr: boolean; de: boolean }[] = [];
+      for (const sec of sections.slice(ilvlSec >= 0 ? ilvlSec + 1 : 1)) {
+        for (const l of sec) {
+          if (/\((implicit|собственное)\)$/i.test(l)) {
+            implicitText.push(l.replace(TAIL_FLAGS, ''));
+            continue;
+          }
+          if (/\((rune|enchant|руна|зачарование)\)$/i.test(l)) continue;
+          if (/^(Corrupted|Осквернено|Fractured Item|Расколотый предмет|Unidentified|Неопознано)/i.test(l)) continue;
+          if (/:\s/.test(l) && !/\d%?\s/.test(l.split(':')[0])) continue; // "Key: value" property lines
+          candidatesLines.push({
+            text: l.replace(TAIL_FLAGS, ''),
+            fr: /\((fractured|расколото)\)$/i.test(l),
+            de: /\((desecrated|очернено)\)$/i.test(l),
+          });
+        }
+      }
+      const fb = this.findBase(nameLines, implicitText, ru);
+      out.base = fb.base;
+      out.baseName = fb.name;
+      for (let i = 0; i < candidatesLines.length; ) {
+        let done = false;
+        for (const k of [2, 1]) {
+          const group = candidatesLines.slice(i, i + k);
+          if (group.length < k) continue;
+          const texts = group.map((g) => g.text);
+          const def = this.chooseTier(this.candidates(texts), texts, { pool: poolIds });
+          if (def) {
+            out.mods.push({
+              def,
+              lines: texts,
+              mod: { id: def.id, ...(group.some((g) => g.fr) ? { fr: true } : {}), ...(group.some((g) => g.de) ? { de: true } : {}) },
+            });
+            i += k;
+            done = true;
+            break;
+          }
+        }
+        if (!done) {
+          out.unmatched.push(candidatesLines[i].text);
+          i++;
+        }
+      }
+    }
+    return out;
+  }
+}
