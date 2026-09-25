@@ -36,9 +36,12 @@ export const ESSENCE_FAMILIES: EssenceFamily[] = [
 ];
 
 export const ESSENCE_GRADES = [
-  { prefix: 'Lesser ', ru: 'Малая', maxLevel: 16 },
-  { prefix: '', ru: 'Обычная', maxLevel: 33 },
-  { prefix: 'Greater ', ru: 'Большая', maxLevel: 54 },
+  { prefix: 'Lesser ', ru: 'Малая', maxLevel: 16, perfect: false },
+  { prefix: '', ru: 'Обычная', maxLevel: 33, perfect: false },
+  { prefix: 'Greater ', ru: 'Большая', maxLevel: 54, perfect: false },
+  // Perfect essences work on rare items: remove a random modifier, then add the
+  // guaranteed one. Their tier is assumed to be the best one the item level allows.
+  { prefix: 'Perfect ', ru: 'Совершенная', maxLevel: Infinity, perfect: true },
 ] as const;
 
 export function essenceName(fam: EssenceFamily, grade: (typeof ESSENCE_GRADES)[number]): string {
@@ -50,6 +53,7 @@ export const DEFAULT_ESSENCE_PRICES: Prices = Object.fromEntries(
     [essenceName(f, ESSENCE_GRADES[0]), 0.1],
     [essenceName(f, ESSENCE_GRADES[1]), 0.4],
     [essenceName(f, ESSENCE_GRADES[2]), 3],
+    [essenceName(f, ESSENCE_GRADES[3]), 25],
   ]),
 );
 
@@ -57,6 +61,7 @@ export interface EssenceOption {
   name: string;
   ru: string;
   mod: ModDef;
+  perfect: boolean;
 }
 
 /** All essences usable on this base, with the modifier each one guarantees. */
@@ -74,7 +79,7 @@ export function essencesForBase(ctx: Ctx): EssenceOption[] {
     for (const grade of ESSENCE_GRADES) {
       const eligible = famTiers.filter((m) => m.l <= grade.maxLevel);
       const mod = eligible[eligible.length - 1] ?? famTiers[0];
-      out.push({ name: essenceName(fam, grade), ru: `${grade.ru} эссенция ${fam.ru}`, mod });
+      out.push({ name: essenceName(fam, grade), ru: `${grade.ru} эссенция ${fam.ru}`, mod, perfect: grade.perfect });
     }
   }
   return out;

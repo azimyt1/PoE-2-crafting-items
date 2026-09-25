@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import { buildCtx } from './item';
-import { outcomes, sample } from './actions';
+import { isValid, outcomes, sample } from './actions';
 import { Planner } from './planner';
 import { explainPlan, makeRng, simulate } from './simulate';
 import { STRATEGIES } from './strategies';
 import { DEFAULT_PRICES } from './currency';
-import { DEFAULT_ESSENCE_PRICES } from './essences';
+import { DEFAULT_ESSENCE_PRICES, essencesForBase } from './essences';
 import type { BaseDef, ModDef, Target } from './types';
 
 const mods: ModDef[] = JSON.parse(fs.readFileSync('public/data/mods.json', 'utf8'));
@@ -66,6 +66,55 @@ describe('actions', () => {
     const outs = outcomes(item, ctx, { kind: 'annul' });
     expect(outs).toHaveLength(1);
     expect(outs[0].item.mods.map((m) => m.id)).toEqual(['IncreasedLife9']);
+  });
+});
+
+describe('new crafting currencies', () => {
+  const lifeRes = { rarity: 'rare' as const, mods: [{ id: 'IncreasedLife8' }, { id: 'IncreasedMana5' }, { id: 'FireResist7' }, { id: 'ColdResist5' }] };
+
+  it('fracturing orb locks exactly one modifier, only once', () => {
+    const ctx = ctxFor('Gold Ring');
+    const outs = outcomes(lifeRes, ctx, { kind: 'fracture' });
+    expect(outs).toHaveLength(4);
+    for (const o of outs) expect(o.item.mods.filter((m) => m.fr)).toHaveLength(1);
+    expect(isValid(outs[0].item, ctx, { kind: 'fracture' })).toBe(false);
+    expect(isValid({ rarity: 'rare', mods: lifeRes.mods.slice(0, 3) }, ctx, { kind: 'fracture' })).toBe(false);
+  });
+
+  it('perfect essence swaps a random modifier for the guaranteed one', () => {
+    const ctx = ctxFor('Gold Ring');
+    const ess = essencesForBase(ctx).find((e) => e.name === 'Perfect Essence of Grounding')!;
+    const a = { kind: 'essence' as const, essence: { name: ess.name, modId: ess.mod.id, perfect: true } };
+    const outs = outcomes(lifeRes, ctx, a);
+    expect(outs.reduce((s, o) => s + o.p, 0)).toBeCloseTo(1, 9);
+    for (const o of outs) {
+      expect(o.item.mods).toHaveLength(4);
+      expect(o.item.mods.map((m) => m.id)).toContain(ess.mod.id);
+    }
+    // Dextral Crystallisation: only suffixes are removed, the life prefix always stays
+    const dex = outcomes(lifeRes, ctx, { ...a, omens: ['Omen of Dextral Crystallisation'] });
+    for (const o of dex) expect(o.item.mods.map((m) => m.id)).toContain('IncreasedLife8');
+    // not usable on magic items
+    expect(isValid({ rarity: 'magic', mods: [] }, ctx, a)).toBe(false);
+  });
+
+  it('greater exaltation adds two modifiers', () => {
+    const ctx = ctxFor('Gold Ring');
+    const outs = outcomes({ rarity: 'rare', mods: [] }, ctx, { kind: 'exalt', omens: ['Omen of Greater Exaltation', 'Omen of Sinistral Exaltation'] });
+    expect(outs.reduce((s, o) => s + o.p, 0)).toBeCloseTo(1, 9);
+    for (const o of outs) {
+      expect(o.item.mods).toHaveLength(2);
+      for (const m of o.item.mods) expect(ctx.byId.get(m.id)!.s).toBe('p');
+    }
+  });
+
+  it('abstract model and sampled policy agree with fracturing and perfect essences', () => {
+    const ctx = ctxFor('Gold Ring');
+    const target: Target = { reqs: [req('IncreasedLife7'), req('FireResist6'), req('ColdResist6'), req('LightningResist6')], need: 4 };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'full')!);
+    const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 300, maxSteps: 6000, buyFirstBase: true });
+    expect(res.successRate).toBeGreaterThan(0.9);
+    if (res.successRate > 0.99) expect(Math.abs(res.meanCost - planner.restartCost) / planner.restartCost).toBeLessThan(0.35);
   });
 });
 

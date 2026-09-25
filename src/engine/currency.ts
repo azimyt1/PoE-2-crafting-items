@@ -62,6 +62,9 @@ export function actionItems(action: Action, base: BaseDef): string[] {
     case 'annul':
       items.push(ANNUL);
       break;
+    case 'fracture':
+      items.push(FRACTURE);
+      break;
     case 'essence':
       if (action.essence) items.push(action.essence.name);
       break;
@@ -102,7 +105,9 @@ const OMEN_RU: Record<OmenName, string> = {
   'Omen of Light': 'Омен света (аннулирование убирает только очернённый мод)',
   'Omen of Sinistral Necromancy': 'Омен левой некромантии (кость: только префикс)',
   'Omen of Dextral Necromancy': 'Омен правой некромантии (кость: только суффикс)',
-  'Omen of Crystallisation': 'Омен кристаллизации',
+  'Omen of Greater Exaltation': 'Омен большего возвышения (экзальт добавляет 2 мода)',
+  'Omen of Sinistral Crystallisation': 'Омен левой кристаллизации (совершенная эссенция убирает только префикс)',
+  'Omen of Dextral Crystallisation': 'Омен правой кристаллизации (совершенная эссенция убирает только суффикс)',
 };
 
 export function omenRu(o: OmenName): string {
@@ -117,6 +122,7 @@ const ORB_RU: Record<string, string> = {
   chaos: 'Сфера хаоса',
   alchemy: 'Сфера алхимии',
   annul: 'Сфера отмены (аннулирование)',
+  fracture: 'Сфера раскола (закрепить случайный мод)',
   restart: 'Взять новую базу и начать заново',
 };
 const TIER_RU = ['', 'Большая ', 'Совершенная '];
@@ -173,6 +179,9 @@ export const DEFAULT_PRICES: Prices = {
   'Omen of Light': 20,
   'Omen of Sinistral Necromancy': 5,
   'Omen of Dextral Necromancy': 5,
+  'Omen of Greater Exaltation': 10,
+  'Omen of Sinistral Crystallisation': 10,
+  'Omen of Dextral Crystallisation': 10,
   'Gnawed Jawbone': 0.3,
   'Preserved Jawbone': 2,
   'Ancient Jawbone': 10,

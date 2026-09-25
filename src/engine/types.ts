@@ -105,7 +105,9 @@ export type OmenName =
   | 'Omen of Light'
   | 'Omen of Sinistral Necromancy'
   | 'Omen of Dextral Necromancy'
-  | 'Omen of Crystallisation';
+  | 'Omen of Greater Exaltation'
+  | 'Omen of Sinistral Crystallisation'
+  | 'Omen of Dextral Crystallisation';
 
 export type ActionKind =
   | 'transmute'
@@ -117,6 +119,7 @@ export type ActionKind =
   | 'annul'
   | 'essence'
   | 'desecrate'
+  | 'fracture'
   | 'restart';
 
 /** 0 = normal orb, 1 = Greater, 2 = Perfect */
@@ -127,6 +130,8 @@ export interface EssenceUse {
   name: string;
   /** modifier id guaranteed on this base */
   modId: string;
+  /** Perfect Essence: used on a rare item, removes a random modifier first */
+  perfect?: boolean;
 }
 
 export type BoneTier = 'Gnawed' | 'Preserved' | 'Ancient';
@@ -153,6 +158,8 @@ export interface Strategy {
     annul: boolean;
     essence: boolean;
     desecrate: boolean;
+    /** Fracturing Orb: lock a random modifier on a rare item with 4+ modifiers */
+    fracture: boolean;
     omens: boolean;
     /** allow Greater / Perfect orbs */
     higherTiers: boolean;

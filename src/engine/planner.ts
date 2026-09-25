@@ -28,6 +28,15 @@ export interface Decision {
 }
 
 const TIERS_ALL: OrbTier[] = [0, 1, 2];
+
+function popcount(x: number): number {
+  let c = 0;
+  while (x) {
+    x &= x - 1;
+    c++;
+  }
+  return c;
+}
 const BONES: BoneTier[] = ['Gnawed', 'Preserved', 'Ancient'];
 
 export class Planner {
@@ -39,7 +48,7 @@ export class Planner {
   private dCache = new Map<string, Decision>();
   private tiers: OrbTier[];
   private models = new Map<string, { model: AbstractModel; starts: AbsState[] }>();
-  private essenceReqs: { name: string; req: number }[];
+  private essenceReqs: { name: string; req: number; perfect: boolean }[];
 
   constructor(ctx: Ctx, target: Target, strategy: Strategy) {
     if (target.reqs.length > 8) throw new Error('Не больше 8 желаемых модов');
@@ -60,7 +69,7 @@ export class Planner {
     this.essenceReqs = [];
     for (const e of this.essences) {
       const i = reqs.findIndex((r) => modMatchesReq(e.mod, r));
-      if (i >= 0) this.essenceReqs.push({ name: e.name, req: i });
+      if (i >= 0) this.essenceReqs.push({ name: e.name, req: i, perfect: e.perfect });
     }
   }
 
@@ -69,7 +78,7 @@ export class Planner {
   project(item: Item): { s: AbsState; fixed: Fixed } {
     const an = analyze(item, this.ctx, this.target);
     const fixed: Fixed = { fracMet: 0, fracBlk: 0, fracJ: { p: 0, s: 0 } };
-    const s: AbsState = { r: item.rarity === 'normal' ? 0 : item.rarity === 'magic' ? 1 : 2, met: 0, blk: 0, jp: 0, js: 0, de: 0 };
+    const s: AbsState = { r: item.rarity === 'normal' ? 0 : item.rarity === 'magic' ? 1 : 2, met: 0, blk: 0, jp: 0, js: 0, de: 0, fx: 0 };
     item.mods.forEach((im, k) => {
       const m = modOf(this.ctx, im);
       if (an.modReq[k] >= 0) {
@@ -89,8 +98,18 @@ export class Planner {
       if (im.fr) fixed.fracJ[m.s]++;
       else if (m.s === 'p') s.jp++;
       else s.js++;
-      if (im.de) s.de = m.s === 'p' ? 1 : 2;
+      // a fractured desecrated modifier cannot be annulled any more
+      if (im.de) s.de = im.fr ? 3 : m.s === 'p' ? 1 : 2;
     });
+    // A single fractured modifier (the usual Fracturing Orb case) is part of the
+    // state itself, so it shares the main model instead of building a new one.
+    const nFrac = popcount(fixed.fracMet) + popcount(fixed.fracBlk) + fixed.fracJ.p + fixed.fracJ.s;
+    if (nFrac === 1) {
+      if (fixed.fracMet) s.fx = 1 + Math.log2(fixed.fracMet);
+      else if (fixed.fracBlk) s.fx = 11 + Math.log2(fixed.fracBlk);
+      else s.fx = fixed.fracJ.p ? 9 : 10;
+      return { s, fixed: { fracMet: 0, fracBlk: 0, fracJ: { p: 0, s: 0 } } };
+    }
     return { s, fixed };
   }
 
@@ -105,6 +124,12 @@ export class Planner {
       this.models.set(key, entry);
     }
     return entry.model;
+  }
+
+  /** Identity of the item's abstract state (model + state). */
+  absKey(item: Item): string {
+    const { s, fixed } = this.project(item);
+    return `${fixed.fracMet}|${fixed.fracBlk}|${fixed.fracJ.p}|${fixed.fracJ.s}|${s.r}|${s.met}|${s.blk}|${s.jp}|${s.js}|${s.de}|${s.fx}`;
   }
 
   /** Expected remaining cost from this item under the best policy. */
@@ -164,6 +189,7 @@ export class Planner {
       if (a.essence) {
         const an = analyze(item, this.ctx, this.target);
         for (const e of this.essences) {
+          if (e.perfect) continue;
           const useful = this.target.reqs.some((r, i) => !an.met.has(i) && modMatchesReq(e.mod, r));
           if (useful) out.push({ kind: 'essence', essence: { name: e.name, modId: e.mod.id } });
         }
@@ -172,7 +198,21 @@ export class Planner {
     } else {
       if (a.exalt)
         for (const t of this.tiers)
-          for (const o of omenSets('Omen of Sinistral Exaltation', 'Omen of Dextral Exaltation')) out.push({ kind: 'exalt', tier: t, omens: o });
+          for (const o of omenSets('Omen of Sinistral Exaltation', 'Omen of Dextral Exaltation')) {
+            out.push({ kind: 'exalt', tier: t, omens: o });
+            if (a.omens) out.push({ kind: 'exalt', tier: t, omens: ['Omen of Greater Exaltation', ...o] });
+          }
+      if (a.essence) {
+        const an = analyze(item, this.ctx, this.target);
+        for (const e of this.essences) {
+          if (!e.perfect) continue;
+          const useful = this.target.reqs.some((r, i) => !an.met.has(i) && modMatchesReq(e.mod, r));
+          if (!useful) continue;
+          for (const o of omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation'))
+            out.push({ kind: 'essence', essence: { name: e.name, modId: e.mod.id, perfect: true }, omens: o });
+        }
+      }
+      if (a.fracture) out.push({ kind: 'fracture' });
       if (a.chaos)
         for (const t of this.tiers) {
           out.push({ kind: 'chaos', tier: t });
@@ -217,10 +257,13 @@ export class Planner {
     const cost = actionCost(action, this.ctx.base, this.ctx.prices, this.ctx.baseCost);
     if (action.kind === 'restart') return { action, cost, value: cost + this.h0 };
     const sig = this.canon(item);
+    const abs = this.absKey(item);
     let v = cost;
     let self = 0;
     for (const o of this.outcomesOf(item, action)) {
-      if (this.canon(o.item) === sig) self += o.p;
+      // Same abstract state = no progress, even if an unwanted modifier was swapped
+      // for another one (otherwise such swaps look like progress and loop forever).
+      if (this.canon(o.item) === sig || this.absKey(o.item) === abs) self += o.p;
       else v += o.p * this.H(o.item);
     }
     // outcomes that leave the state unchanged repeat the action (geometric)

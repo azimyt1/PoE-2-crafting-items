@@ -47,10 +47,24 @@ function addFilterFor(_item: Item, a: Action): AddFilter | null {
   }
 }
 
+/** Room for the guaranteed modifier of a Perfect Essence after removing mod `skip`. */
+function essenceFits(item: Item, ctx: Ctx, mod: ModDef, skip: number): boolean {
+  const rest: Item = { rarity: 'rare', mods: item.mods.filter((_, k) => k !== skip) };
+  if (openSlots(rest, ctx)[mod.s] <= 0) return false;
+  const blocked = new Set(rest.mods.flatMap((im) => modOf(ctx, im).g));
+  return !mod.g.some((g) => blocked.has(g));
+}
+
 /** Mods that the removal part of an action may remove (uniformly). */
 export function removable(item: Item, ctx: Ctx, a: Action): number[] {
   let idx = item.mods.map((_, i) => i).filter((i) => !item.mods[i].fr);
-  if (a.kind === 'annul') {
+  if (a.kind === 'essence' && a.essence?.perfect) {
+    const side = sideOmen(a, 'Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation');
+    if (side) idx = idx.filter((i) => modOf(ctx, item.mods[i]).s === side);
+    // Assumption: the game only removes a modifier that makes room for the new one.
+    const m = ctx.byId.get(a.essence.modId);
+    idx = m ? idx.filter((i) => essenceFits(item, ctx, m, i)) : [];
+  } else if (a.kind === 'annul') {
     if (has(a, 'Omen of Light')) idx = idx.filter((i) => item.mods[i].de);
     const side = sideOmen(a, 'Omen of Sinistral Annulment', 'Omen of Dextral Annulment');
     if (side) idx = idx.filter((i) => modOf(ctx, item.mods[i]).s === side);
@@ -90,14 +104,25 @@ export function isValid(item: Item, ctx: Ctx, a: Action): boolean {
       return item.rarity === 'magic' && item.mods.length < 2 && addPool(item, ctx, addFilterFor(item, a)!).length > 0;
     case 'regal':
       return item.rarity === 'magic' && addPool(item, ctx, addFilterFor(item, a)!).length > 0;
-    case 'exalt':
-      return item.rarity === 'rare' && addPool(item, ctx, addFilterFor(item, a)!).length > 0;
+    case 'exalt': {
+      if (item.rarity !== 'rare') return false;
+      const f = addFilterFor(item, a)!;
+      if (!addPool(item, ctx, f).length) return false;
+      if (!has(a, 'Omen of Greater Exaltation')) return true;
+      // two modifiers need two free slots on the allowed side(s)
+      const open = openSlots(item, ctx);
+      return (f.side ? open[f.side] : open.p + open.s) >= 2;
+    }
+    case 'fracture':
+      return item.rarity === 'rare' && item.mods.length >= 4 && !item.mods.some((m) => m.fr);
     case 'chaos':
       return item.rarity === 'rare' && removable(item, ctx, a).length > 0;
     case 'annul':
       return item.rarity !== 'normal' && removable(item, ctx, a).length > 0;
     case 'essence': {
-      if (item.rarity !== 'magic' || !a.essence) return false;
+      if (!a.essence) return false;
+      if (a.essence.perfect) return item.rarity === 'rare' && removable(item, ctx, a).length > 0;
+      if (item.rarity !== 'magic') return false;
       const m = ctx.byId.get(a.essence.modId);
       if (!m) return false;
       const blocked = new Set(item.mods.flatMap((im) => modOf(ctx, im).g));
@@ -163,12 +188,29 @@ export function outcomes(
       const f = addFilterFor(item, a)!;
       return addOutcomes({ ...item, rarity: 'rare' }, ctx, { ...f, asRarity: undefined }, 'rare', classify);
     }
-    case 'exalt':
-      return addOutcomes(item, ctx, addFilterFor(item, a)!, 'rare', classify);
+    case 'exalt': {
+      const f = addFilterFor(item, a)!;
+      const first = addOutcomes(item, ctx, f, 'rare', classify);
+      if (!has(a, 'Omen of Greater Exaltation')) return first;
+      const out: Outcome[] = [];
+      for (const o of first) {
+        const second = addOutcomes(o.item, ctx, f, 'rare', classify);
+        if (!second.length) out.push(o);
+        for (const x of second) out.push({ p: o.p * x.p, item: x.item });
+      }
+      return out;
+    }
     case 'essence': {
       const m = ctx.byId.get(a.essence!.modId)!;
-      return [{ p: 1, item: withMod(item, m, 'rare') }];
+      if (!a.essence!.perfect) return [{ p: 1, item: withMod(item, m, 'rare') }];
+      const idx = removable(item, ctx, a);
+      return idx.map((i) => ({ p: 1 / idx.length, item: withMod(withoutIdx(item, i), m, 'rare') }));
     }
+    case 'fracture':
+      return item.mods.map((_, i) => ({
+        p: 1 / item.mods.length,
+        item: { rarity: item.rarity, mods: item.mods.map((m, k) => (k === i ? { ...m, fr: true } : { ...m })) },
+      }));
     case 'annul': {
       const idx = removable(item, ctx, a);
       return idx.map((i) => ({ p: 1 / idx.length, item: withoutIdx(item, i) }));
@@ -269,11 +311,22 @@ export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: M
     }
     case 'exalt':
       addRandom(it, ctx, addFilterFor(item, a)!, rng);
+      if (has(a, 'Omen of Greater Exaltation')) addRandom(it, ctx, addFilterFor(item, a)!, rng);
       return it;
     case 'essence':
+      if (a.essence!.perfect) {
+        const idx = removable(item, ctx, a);
+        if (!idx.length) return it;
+        it.mods.splice(idx[Math.floor(rng() * idx.length)], 1);
+      }
       it.rarity = 'rare';
       it.mods.push({ id: a.essence!.modId });
       return it;
+    case 'fracture': {
+      if (!it.mods.length) return it;
+      it.mods[Math.floor(rng() * it.mods.length)].fr = true;
+      return it;
+    }
     case 'annul': {
       const idx = removable(item, ctx, a);
       if (!idx.length) return it;

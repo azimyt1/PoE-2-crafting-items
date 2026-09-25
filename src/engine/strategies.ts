@@ -11,6 +11,7 @@ const none = {
   annul: false,
   essence: false,
   desecrate: false,
+  fracture: false,
   omens: false,
   higherTiers: false,
   restart: true,
@@ -37,16 +38,17 @@ export const STRATEGIES: Strategy[] = [
     id: 'essence',
     name: 'Эссенция + экзальты',
     description:
-      'Магический предмет превращается в редкий эссенцией с гарантированным нужным модом, дальше экзальты с оменами.',
+      'Магический предмет превращается в редкий эссенцией с гарантированным нужным модом, дальше экзальты с оменами. На редком предмете совершенная эссенция меняет случайный мод на гарантированный, сфера раскола закрепляет удачный мод.',
     start: 'transmute',
-    allow: { ...none, augment: true, regal: true, exalt: true, annul: true, essence: true, omens: true, higherTiers: true },
+    allow: { ...none, augment: true, regal: true, exalt: true, annul: true, essence: true, fracture: true, omens: true, higherTiers: true },
   },
   {
     id: 'chaos',
     name: 'Алхимия + хаос',
-    description: 'Сфера алхимии сразу даёт редкий предмет с 4 модами, дальше сферы хаоса (с оменами строгания/стирания) и экзальты.',
+    description:
+      'Сфера алхимии сразу даёт редкий предмет с 4 модами, дальше сферы хаоса (с оменами строгания/стирания) и экзальты. Сфера раскола может закрепить нужный мод перед хаосом.',
     start: 'alchemy',
-    allow: { ...none, exalt: true, chaos: true, omens: true, higherTiers: true },
+    allow: { ...none, exalt: true, chaos: true, fracture: true, omens: true, higherTiers: true },
   },
   {
     id: 'desecrate',
@@ -69,6 +71,7 @@ export const STRATEGIES: Strategy[] = [
       annul: true,
       essence: true,
       desecrate: true,
+      fracture: true,
       omens: true,
       higherTiers: true,
       restart: true,
