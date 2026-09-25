@@ -40,7 +40,7 @@ function plannerFor(setup: Setup, strategyId: string): Planner {
 function modsText(ctx: Ctx, item: Item): string[] {
   return item.mods.map((m) => {
     const d = modOf(ctx, m);
-    return `${d.s === 'p' ? 'П' : 'С'}: ${d.x.replace(/\n/g, ' / ')} (ур. ${d.l})${m.fr ? ' [расколот]' : ''}${m.de ? ' [осквернён]' : ''}`;
+    return `${d.s === 'p' ? 'П' : 'С'}: ${d.x.replace(/\n/g, ' / ')} (ур. ${d.l})${m.fr ? ' [расколот]' : ''}${m.de ? ' [очернён]' : ''}`;
   });
 }
 

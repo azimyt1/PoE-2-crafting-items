@@ -6,6 +6,8 @@ import { tierLabel, type Family } from './families';
 import { fmtCost, fmtPct, type DisplayCurrency } from './format';
 import { PlanSteps } from './Results';
 import type { WorkerClient } from './workerClient';
+import { GameLink, type LinkMode } from './GameLink';
+import type { ItemParser, ParsedItem } from '../engine/parseItem';
 
 interface Props {
   client: WorkerClient;
@@ -18,6 +20,46 @@ interface Props {
   setStrategyId: (s: string) => void;
   currency: DisplayCurrency;
   prices: Prices;
+  parser: ItemParser | null;
+  linkMode: LinkMode;
+  setLinkMode: (m: LinkMode) => void;
+  /** the game item is on another base / item level: switch the setup */
+  onBaseDetected: (p: ParsedItem) => void;
+}
+
+/** Which kind of action most likely turned `a` into `b`. */
+function inferKind(a: Item, b: Item): string | null {
+  const before = new Set(a.mods.map((m) => m.id));
+  const after = new Set(b.mods.map((m) => m.id));
+  const added = b.mods.filter((m) => !before.has(m.id)).length;
+  const removed = a.mods.filter((m) => !after.has(m.id)).length;
+  if (b.rarity === 'normal' && a.rarity !== 'normal') return 'restart';
+  if (a.rarity === 'normal' && b.rarity === 'magic') return 'transmute';
+  if (a.rarity === 'normal' && b.rarity === 'rare') return 'alchemy';
+  if (a.rarity === 'magic' && b.rarity === 'rare') return added === 1 && removed === 0 ? 'regal|essence' : null;
+  if (a.rarity === b.rarity) {
+    if (added >= 1 && removed === 0) return b.mods.some((m) => m.de && !before.has(m.id)) ? 'desecrate' : a.rarity === 'magic' ? 'augment' : 'exalt';
+    if (added === 0 && removed >= 1) return 'annul';
+    if (added === 1 && removed === 1) return 'chaos';
+  }
+  return null;
+}
+
+const KIND_RU: Record<string, string> = {
+  restart: 'новая база',
+  transmute: 'превращение',
+  alchemy: 'алхимия',
+  'regal|essence': 'регал или эссенция',
+  augment: 'усиление',
+  exalt: 'экзальт',
+  desecrate: 'очернение',
+  annul: 'отмена',
+  chaos: 'хаос',
+};
+
+function sameItem(a: Item, b: Item): boolean {
+  const key = (i: Item) => i.rarity + ':' + i.mods.map((m) => m.id + (m.fr ? '!' : '') + (m.de ? '~' : '')).sort().join(',');
+  return key(a) === key(b);
 }
 
 export function Tracker(p: Props) {
@@ -30,6 +72,29 @@ export function Tracker(p: Props) {
   const [famSel, setFamSel] = useState('');
   const [tierSel, setTierSel] = useState('');
   const [q, setQ] = useState('');
+  const [autoCount, setAutoCount] = useState(true);
+
+  function onGameItem(parsed: ParsedItem) {
+    if (parsed.base && (parsed.base.id !== ctx.base.id || (parsed.ilvl && parsed.ilvl !== p.setup.ilvl))) p.onBaseDetected(parsed);
+    const rarity: Rarity = parsed.rarity === 'magic' || parsed.rarity === 'rare' ? parsed.rarity : 'normal';
+    const next: Item = { rarity, mods: parsed.mods.map((m) => m.mod) };
+    if (sameItem(next, item)) return;
+    const before = new Set(item.mods.map((m) => m.id));
+    const after = new Set(next.mods.map((m) => m.id));
+    const added = next.mods.filter((m) => !before.has(m.id)).map((m) => ctx.byId.get(m.id)?.x.replace(/\n/g, ' / ') ?? m.id);
+    const removed = item.mods.filter((m) => !after.has(m.id)).map((m) => ctx.byId.get(m.id)?.x.replace(/\n/g, ' / ') ?? m.id);
+    const diff = [...added.map((x) => '+ ' + x), ...removed.map((x) => '− ' + x)].join('; ') || 'изменена редкость';
+    const kind = inferKind(item, next);
+    const matchesAdvice = !!(kind && advice?.action && kind.split('|').includes(advice.action.kind));
+    if (autoCount && matchesAdvice && advice?.cost !== undefined) {
+      setSpent((v) => v + (advice.cost ?? 0));
+      setLog((l) => [`(игра) ${advice.title} → ${diff}`, ...l].slice(0, 30));
+    } else {
+      const guess = kind ? KIND_RU[kind] ?? kind : 'не удалось определить действие';
+      setLog((l) => [`(игра) похоже на: ${guess} → ${diff}${autoCount ? ' (шаг отличается от совета, расход не учтён)' : ''}`, ...l].slice(0, 30));
+    }
+    setItem(next);
+  }
 
   const setupKey = JSON.stringify(p.setup);
   const itemKey = JSON.stringify(item);
@@ -100,10 +165,12 @@ export function Tracker(p: Props) {
     <section className="tracker">
       <div className="card">
         <h2>Текущее состояние предмета</h2>
-        <p className="muted small">
-          Внесите то, что сейчас на предмете в игре. После каждого действия в игре обновляйте моды здесь: помощник пересчитает шансы и
-          подскажет следующий шаг или запасной план.
-        </p>
+        <GameLink parser={p.parser} mode={p.linkMode} setMode={p.setLinkMode} onItem={onGameItem} poolIds={new Set(ctx.regular.map((e) => e.mod.id))} />
+        <label className="inline small">
+          <input type="checkbox" checked={autoCount} onChange={(e) => setAutoCount(e.target.checked)} /> при новом предмете из игры считать, что
+          выполнен рекомендованный шаг (учитывать его стоимость)
+        </label>
+        <p className="muted small">Моды можно поправить и вручную: помощник пересчитает шансы и подскажет следующий шаг или запасной план.</p>
         <div className="grid">
           <label>
             Редкость
@@ -152,7 +219,7 @@ export function Tracker(p: Props) {
                       <input type="checkbox" checked={!!m.fr} onChange={(e) => patchMod(i, { fr: e.target.checked })} /> расколот
                     </label>{' '}
                     <label className="inline">
-                      <input type="checkbox" checked={!!m.de} onChange={(e) => patchMod(i, { de: e.target.checked })} /> осквернён
+                      <input type="checkbox" checked={!!m.de} onChange={(e) => patchMod(i, { de: e.target.checked })} /> очернён
                     </label>
                   </td>
                   <td>

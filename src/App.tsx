@@ -14,6 +14,8 @@ import { PricesPanel, type PricesFile } from './ui/PricesPanel';
 import { WeightsPanel } from './ui/WeightsPanel';
 import { HowItWorks } from './ui/HowItWorks';
 import { WorkerClient } from './ui/workerClient';
+import { GameLink, type LinkMode } from './ui/GameLink';
+import { ItemParser, type ParsedItem, type RuData } from './engine/parseItem';
 
 interface Meta {
   gameVersion: string;
@@ -32,6 +34,7 @@ interface Saved {
   weights: Record<string, number>;
   currency: DisplayCurrency;
   trials: number;
+  linkMode: LinkMode;
 }
 
 const STORE_KEY = 'poe2craft:v1';
@@ -48,7 +51,7 @@ type Tab = 'goal' | 'results' | 'tracker' | 'prices' | 'weights' | 'help';
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
-  const [data, setData] = useState<{ bases: BaseDef[]; mods: ModDef[]; meta: Meta; pricesFile: PricesFile | null } | null>(null);
+  const [data, setData] = useState<{ bases: BaseDef[]; mods: ModDef[]; meta: Meta; pricesFile: PricesFile | null; ru: RuData | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const client = useRef<WorkerClient | null>(null);
@@ -64,6 +67,9 @@ export default function App() {
   const [weights, setWeights] = useState<Record<string, number>>(saved.weights ?? {});
   const [currency, setCurrency] = useState<DisplayCurrency>(saved.currency ?? 'ex');
   const [trials, setTrials] = useState(saved.trials ?? 400);
+  const [linkMode, setLinkMode] = useState<LinkMode>(saved.linkMode ?? 'paste');
+  const [pricesFile, setPricesFile] = useState<PricesFile | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const [results, setResults] = useState<StrategyResult[]>([]);
   const [running, setRunning] = useState(false);
@@ -87,7 +93,14 @@ export default function App() {
         } catch {
           pricesFile = null;
         }
-        setData({ bases, mods, meta, pricesFile });
+        let ru: RuData | null = null;
+        try {
+          ru = await get('ru.json');
+        } catch {
+          ru = null;
+        }
+        setData({ bases, mods, meta, pricesFile, ru });
+        setPricesFile(pricesFile);
         const c = new WorkerClient();
         client.current = c;
         await c.init(mods, bases);
@@ -101,17 +114,59 @@ export default function App() {
   // ---- persist
   useEffect(() => {
     try {
-      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials };
+      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode };
       localStorage.setItem(STORE_KEY, JSON.stringify(s));
     } catch {
       /* storage unavailable */
     }
-  }, [cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials]);
+  }, [cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode]);
+
+  const parser = useMemo(() => (data ? new ItemParser(data.bases, data.mods, data.ru ?? undefined) : null), [data]);
+
+  /** An item read from the game: switch to its base and item level. */
+  function applyGameBase(p: ParsedItem) {
+    if (p.base) {
+      setCls(p.base.cls);
+      setBaseId(p.base.id);
+    }
+    if (p.ilvl) setIlvl(p.ilvl);
+  }
+
+  function applyGameItem(p: ParsedItem) {
+    applyGameBase(p);
+    const rarity = p.rarity === 'magic' || p.rarity === 'rare' ? p.rarity : 'normal';
+    setTrackerItem({ rarity, mods: p.mods.map((m) => m.mod) });
+  }
+
+  // Re-read published prices every 15 minutes, so an open page stays current.
+  async function refreshPrices(): Promise<boolean> {
+    try {
+      const r = await fetch(`./data/prices.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return false;
+      const f = (await r.json()) as PricesFile;
+      setPricesFile((cur) => (!cur || f.updatedAt > cur.updatedAt ? f : cur));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  useEffect(() => {
+    const t = setInterval(() => {
+      void refreshPrices();
+      setNow(Date.now());
+    }, 15 * 60 * 1000);
+    const clock = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => {
+      clearInterval(t);
+      clearInterval(clock);
+    };
+  }, []);
 
   const prices: Prices = useMemo(
-    () => ({ ...DEFAULT_PRICES, ...DEFAULT_ESSENCE_PRICES, ...(data?.pricesFile?.prices ?? {}), ...priceOverrides }),
-    [data, priceOverrides],
+    () => ({ ...DEFAULT_PRICES, ...DEFAULT_ESSENCE_PRICES, ...(pricesFile?.prices ?? {}), ...priceOverrides }),
+    [pricesFile, priceOverrides],
   );
+  const priceAgeH = pricesFile ? (now - Date.parse(pricesFile.updatedAt)) / 3600000 : Infinity;
 
   const base = useMemo(() => data?.bases.find((b) => b.id === baseId) ?? null, [data, baseId]);
 
@@ -191,7 +246,15 @@ export default function App() {
         <div>
           <h1>PoE 2 · помощник по крафту</h1>
           <div className="muted small">
-            Данные игры {data.meta.gameVersion} · цены: {data.pricesFile ? `${data.pricesFile.league}, ${new Date(data.pricesFile.updatedAt).toLocaleString('ru-RU')}` : 'примерные (не загружены)'}
+            Данные игры {data.meta.gameVersion} · цены:{' '}
+            {pricesFile ? (
+              <span className={priceAgeH > 6 ? 'warn-inline' : ''}>
+                {pricesFile.league}, обновлены {priceAgeH < 1 ? `${Math.max(1, Math.round(priceAgeH * 60))} мин` : `${Math.round(priceAgeH)} ч`} назад
+                {priceAgeH > 6 ? ' — устарели, проверьте вкладку «Цены»' : ''}
+              </span>
+            ) : (
+              <span className="warn-inline">примерные (рыночные не загружены)</span>
+            )}
           </div>
         </div>
         <label className="inline">
@@ -227,6 +290,10 @@ export default function App() {
             setBaseCost={setBaseCost}
             rareCap={ctx?.rareCap}
           />
+          <section className="card">
+            <GameLink parser={parser} mode={linkMode} setMode={setLinkMode} onItem={applyGameItem} compact />
+            <div className="muted small">Скопированный предмет сразу выставит базу, уровень предмета и текущие моды для трекера.</div>
+          </section>
           {ctx && (
             <TargetEditor families={families} reqs={reqs} setReqs={setReqs} need={effectiveNeed} setNeed={setNeed} rareCap={ctx.rareCap} />
           )}
@@ -274,12 +341,29 @@ export default function App() {
           setStrategyId={setTrackerStrategy}
           currency={currency}
           prices={prices}
+          parser={parser}
+          linkMode={linkMode}
+          setLinkMode={setLinkMode}
+          onBaseDetected={applyGameBase}
         />
       )}
-      {tab === 'tracker' && !setup && <div className="card">Сначала выберите базу и желаемые моды на вкладке «Предмет и цель».</div>}
+      {tab === 'tracker' && !setup && (
+        <div className="card">
+          <p>Сначала выберите желаемые моды на вкладке «Предмет и цель». Базу можно взять прямо из игры:</p>
+          <GameLink parser={parser} mode={linkMode} setMode={setLinkMode} onItem={applyGameItem} compact />
+        </div>
+      )}
 
       {tab === 'prices' && (
-        <PricesPanel prices={prices} file={data.pricesFile} overrides={priceOverrides} setOverrides={setPriceOverrides} currency={currency} />
+        <PricesPanel
+          prices={prices}
+          file={pricesFile}
+          setFile={setPricesFile}
+          refresh={refreshPrices}
+          overrides={priceOverrides}
+          setOverrides={setPriceOverrides}
+          currency={currency}
+        />
       )}
 
       {tab === 'weights' && ctx && <WeightsPanel families={families} weights={weights} setWeights={setWeights} />}

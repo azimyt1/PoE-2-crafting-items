@@ -48,7 +48,7 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, rareCap }
             <span>{f.name}</span>
             <span className="muted small">
               {f.tiers.length} тир. · макс. ур. {f.tiers[0].l}
-              {f.desecrated ? ' · только осквернение' : ''}
+              {f.desecrated ? ' · только очернение' : ''}
             </span>
           </button>
         ))}

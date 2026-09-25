@@ -396,3 +396,22 @@ footer {
     padding: 10px;
   }
 }
+
+.gamelink {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.gamelink .row {
+  margin: 0 0 6px;
+}
+.gamelink textarea {
+  margin-top: 6px;
+}
+code {
+  background: #0c0a08;
+  padding: 1px 4px;
+  border-radius: 3px;
+}

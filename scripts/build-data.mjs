@@ -3,15 +3,17 @@
 // (https://github.com/repoe-fork/poe2, data exported from the game client).
 //
 // Usage:
-//   node scripts/build-data.mjs                 # downloads from GitHub
-//   node scripts/build-data.mjs <local-dir>     # uses mods.json/base_items.json from a folder
+//   node scripts/build-data.mjs                          # downloads from GitHub
+//   node scripts/build-data.mjs <repoe-dir> [<ee2-dir>]  # uses local copies
 //
-// Output: public/data/{bases,mods,meta}.json
+// Output: public/data/{bases,mods,meta,ru}.json
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const SOURCE = 'https://raw.githubusercontent.com/repoe-fork/poe2/master';
+// Russian translations of stat lines and base names (MIT, Exiled Exchange 2).
+const EE2 = 'https://raw.githubusercontent.com/Kvan7/Exiled-Exchange-2/master/dataParser/output';
 const OUT = path.resolve('public/data');
 
 // Item classes we support for crafting, with Russian display names.
@@ -68,6 +70,26 @@ async function loadVersion(localDir) {
   } catch {
     return 'unknown';
   }
+}
+
+// Normalised line template: numbers and ranges become '#', signs dropped, lowercase.
+// Must stay identical to src/engine/parseItem.ts:template().
+export function template(line) {
+  return line
+    .replace(/\(-?\d+(?:\.\d+)?-(-?\d+(?:\.\d+)?)\)/g, '#')
+    .replace(/[+-]?\d+(?:[.,]\d+)?/g, '#')
+    .replace(/[+-]#/g, '#')
+    .replace(/#\s*#/g, '#')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+async function loadEe2(name, ee2Dir) {
+  if (ee2Dir) return fs.readFile(path.join(ee2Dir, name), 'utf8');
+  const res = await fetch(`${EE2}/${name}`);
+  if (!res.ok) throw new Error(`${res.status} ${name}`);
+  return res.text();
 }
 
 // "+(5-8) to [Strength|Strength]" -> "+(5-8) to Strength"
@@ -180,6 +202,27 @@ async function main() {
     ),
   );
   console.log(`Game version ${version}: ${bases.length} bases, ${outMods.length} mods written to ${OUT}`);
+
+  // ---- Russian client support
+  try {
+    const ee2Dir = process.argv[3];
+    const ndjson = (t) => t.split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    const [ruStats, ruItems] = await Promise.all([loadEe2('ru/stats.ndjson', ee2Dir), loadEe2('ru/items.ndjson', ee2Dir)]);
+    const known = new Set(outMods.flatMap((m) => m.x.split('\n').map(template)));
+    const templates = {};
+    for (const e of ndjson(ruStats)) {
+      const en = template(e.ref || '');
+      if (!known.has(en)) continue;
+      for (const m of e.matchers || []) if (m.string && !m.negate) templates[template(m.string)] = en;
+    }
+    const baseNames = new Set(bases.map((b) => b.name));
+    const ruBases = {};
+    for (const it of ndjson(ruItems)) if (it.namespace === 'ITEM' && baseNames.has(it.refName) && it.name) ruBases[it.name] = it.refName;
+    await fs.writeFile(path.join(OUT, 'ru.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', templates, bases: ruBases }));
+    console.log(`Russian: ${Object.keys(templates).length} line templates, ${Object.keys(ruBases).length} base names`);
+  } catch (e) {
+    console.warn(`Russian data skipped: ${e.message}`);
+  }
 }
 
 main().catch((e) => {

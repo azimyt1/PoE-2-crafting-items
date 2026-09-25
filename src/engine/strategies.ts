@@ -50,9 +50,9 @@ export const STRATEGIES: Strategy[] = [
   },
   {
     id: 'desecrate',
-    name: 'Осквернение (кости Бездны)',
+    name: 'Очернение (кости Бездны)',
     description:
-      'Экзальты и эссенции плюс кости: осквернённый мод выбирается из 3 вариантов. Омен света позволяет снять только осквернённый мод.',
+      'Экзальты и эссенции плюс кости: очернённый мод выбирается из 3 вариантов. Омен света позволяет снять только очернённый мод.',
     start: 'transmute',
     allow: { ...none, augment: true, regal: true, exalt: true, annul: true, essence: true, desecrate: true, omens: true, higherTiers: true },
   },

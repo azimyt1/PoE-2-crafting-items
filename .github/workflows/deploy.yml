@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '17 */6 * * *' # prices every 6 hours
+    - cron: '7 * * * *' # prices every hour (poe.ninja refreshes about hourly)
   workflow_dispatch:
     inputs:
       league:

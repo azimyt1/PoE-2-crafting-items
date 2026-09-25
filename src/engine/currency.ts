@@ -99,7 +99,7 @@ const OMEN_RU: Record<OmenName, string> = {
   'Omen of Dextral Erasure': 'Омен правого стирания (хаос убирает только суффикс)',
   'Omen of Sinistral Annulment': 'Омен левого аннулирования (убрать только префикс)',
   'Omen of Dextral Annulment': 'Омен правого аннулирования (убрать только суффикс)',
-  'Omen of Light': 'Омен света (аннулирование убирает только осквернённый мод)',
+  'Omen of Light': 'Омен света (аннулирование убирает только очернённый мод)',
   'Omen of Sinistral Necromancy': 'Омен левой некромантии (кость: только префикс)',
   'Omen of Dextral Necromancy': 'Омен правой некромантии (кость: только суффикс)',
   'Omen of Crystallisation': 'Омен кристаллизации',
@@ -124,7 +124,7 @@ const TIER_RU = ['', 'Большая ', 'Совершенная '];
 export function actionTitleRu(a: Action, base: BaseDef): string {
   let t: string;
   if (a.kind === 'essence') t = `Эссенция: ${a.essence?.name ?? '?'}`;
-  else if (a.kind === 'desecrate') t = `Осквернение костью: ${boneName(base, a.bone ?? 'Preserved')} (выбрать лучший из 3)`;
+  else if (a.kind === 'desecrate') t = `Очернение костью: ${boneName(base, a.bone ?? 'Preserved')} (выбрать лучший из 3)`;
   else {
     const tier = a.tier ?? 0;
     const name = ORB_RU[a.kind] ?? a.kind;
