@@ -1,0 +1,39 @@
+{
+  "gameVersion": "4.5.5.2",
+  "builtAt": "2026-09-25T20:23:03.270Z",
+  "source": "https://github.com/repoe-fork/poe2",
+  "classes": {
+    "Body Armour": "Нагрудник",
+    "Helmet": "Шлем",
+    "Gloves": "Перчатки",
+    "Boots": "Сапоги",
+    "Shield": "Щит",
+    "Buckler": "Баклер",
+    "Focus": "Фокус",
+    "Quiver": "Колчан",
+    "Ring": "Кольцо",
+    "Amulet": "Амулет",
+    "Belt": "Пояс",
+    "One Hand Sword": "Одноручный меч",
+    "Two Hand Sword": "Двуручный меч",
+    "One Hand Axe": "Одноручный топор",
+    "Two Hand Axe": "Двуручный топор",
+    "One Hand Mace": "Одноручная булава",
+    "Two Hand Mace": "Двуручная булава",
+    "Dagger": "Кинжал",
+    "Claw": "Когти",
+    "Spear": "Копьё",
+    "Flail": "Цеп",
+    "Warstaff": "Боевой посох (квотерстафф)",
+    "Staff": "Посох",
+    "Wand": "Жезл",
+    "Sceptre": "Скипетр",
+    "Bow": "Лук",
+    "Crossbow": "Арбалет",
+    "Talisman": "Талисман"
+  },
+  "counts": {
+    "bases": 1760,
+    "mods": 1542
+  }
+}
