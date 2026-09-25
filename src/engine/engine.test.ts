@@ -76,12 +76,10 @@ describe('planner + simulation', () => {
     it(`strategy ${s.id} finishes a 3-mod ring`, () => {
       const ctx = ctxFor('Gold Ring');
       const planner = new Planner(ctx, target, s);
-      const t0 = Date.now();
       const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 300, maxSteps: 6000, buyFirstBase: true });
-      const ms = Date.now() - t0;
-      console.log(s.id, JSON.stringify({ ms, success: res.successRate, mean: res.meanCost.toFixed(1), p90: res.p90Cost.toFixed(1), steps: res.meanSteps.toFixed(1), restarts: res.meanRestarts.toFixed(1), est: (planner.restartCost).toFixed(1) }));
-      console.log('   usage', JSON.stringify(Object.fromEntries(Object.entries(res.usage).map(([k, v]) => [k, +v.toFixed(2)]))));
       expect(res.successRate).toBeGreaterThan(0.9);
+      // the model estimate and the simulated policy must agree (within noise)
+      if (res.successRate > 0.99) expect(Math.abs(res.meanCost - planner.restartCost) / planner.restartCost).toBeLessThan(0.35);
     });
   }
 
@@ -89,7 +87,6 @@ describe('planner + simulation', () => {
     const ctx = ctxFor('Gold Ring');
     const planner = new Planner(ctx, target, STRATEGIES[1]);
     const plan = explainPlan(planner, { rarity: 'normal', mods: [] });
-    for (const st of plan) console.log(`${st.title} | p=${st.pGood.toFixed(2)} | fail→ ${st.fallback ?? '-'} | rem=${st.remaining.toFixed(1)}`);
     expect(plan.length).toBeGreaterThan(2);
   });
 });
