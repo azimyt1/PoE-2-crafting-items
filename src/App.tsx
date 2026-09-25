@@ -23,6 +23,14 @@ interface Meta {
   classes: Record<string, string>;
 }
 
+/** Community modifier weights (Craft of Exile), built by scripts/build-weights.mjs */
+interface WeightsFile {
+  source: string;
+  builtAt: string;
+  groups: Record<string, Record<string, number>>;
+  bases: Record<string, string>;
+}
+
 interface Saved {
   cls: string;
   baseId: string;
@@ -51,7 +59,14 @@ type Tab = 'goal' | 'results' | 'tracker' | 'prices' | 'weights' | 'help';
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
-  const [data, setData] = useState<{ bases: BaseDef[]; mods: ModDef[]; meta: Meta; pricesFile: PricesFile | null; ru: RuData | null } | null>(null);
+  const [data, setData] = useState<{
+    bases: BaseDef[];
+    mods: ModDef[];
+    meta: Meta;
+    pricesFile: PricesFile | null;
+    ru: RuData | null;
+    weights: WeightsFile | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const client = useRef<WorkerClient | null>(null);
@@ -99,7 +114,13 @@ export default function App() {
         } catch {
           ru = null;
         }
-        setData({ bases, mods, meta, pricesFile, ru });
+        let weightsFile: WeightsFile | null = null;
+        try {
+          weightsFile = await get('weights.json');
+        } catch {
+          weightsFile = null;
+        }
+        setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile });
         setPricesFile(pricesFile);
         const c = new WorkerClient();
         client.current = c;
@@ -180,10 +201,17 @@ export default function App() {
     }
   }, [data, cls, base]);
 
+  // Craft of Exile weights for this base; the user's own weights override them.
+  const community = useMemo(() => {
+    const group = base && data?.weights?.bases[base.name];
+    return { group: group || null, weights: (group && data?.weights?.groups[group]) || {} };
+  }, [data, base]);
+  const effWeights = useMemo(() => ({ ...community.weights, ...weights }), [community, weights]);
+
   const ctx = useMemo(() => {
     if (!data || !base) return null;
-    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: weights });
-  }, [data, base, ilvl, prices, baseCost, weights]);
+    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: effWeights });
+  }, [data, base, ilvl, prices, baseCost, effWeights]);
 
   const families = useMemo(() => (ctx ? familiesOf(ctx) : []), [ctx]);
 
@@ -198,8 +226,8 @@ export default function App() {
 
   const setup: Setup | null = useMemo(() => {
     if (!base || !reqs.length) return null;
-    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights };
-  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, weights]);
+    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights: effWeights };
+  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, effWeights]);
 
   const setupKey = setup ? JSON.stringify(setup) : '';
 
@@ -366,7 +394,14 @@ export default function App() {
         />
       )}
 
-      {tab === 'weights' && ctx && <WeightsPanel families={families} weights={weights} setWeights={setWeights} />}
+      {tab === 'weights' && ctx && <WeightsPanel
+          families={families}
+          weights={weights}
+          setWeights={setWeights}
+          community={community.weights}
+          group={community.group}
+          builtAt={data?.weights?.builtAt}
+        />}
 
       {tab === 'help' && <HowItWorks />}
 

@@ -7,7 +7,7 @@
 // everything with an index of what was fetched.
 //
 // Usage: node scripts/fetch-coe.mjs [outDir]   (default: coe-raw)
-// Please keep it polite: this runs at most once a day in GitHub Actions.
+// Please keep it polite: it only runs when started by hand in GitHub Actions.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -46,7 +46,8 @@ function refsIn(text, base) {
   for (const re of patterns) {
     for (const m of text.matchAll(re)) {
       try {
-        const u = new URL(m[1], base);
+        // bare paths in scripts ("json/poe2/...") are relative to the site root
+        const u = new URL(m[1], /^(https?:|\/|\.)/.test(m[1]) ? base : SITE + '/');
         if (u.hostname.endsWith('craftofexile.com') && /\.(js|json)$/i.test(u.pathname)) out.add(u.href);
       } catch {
         // not a URL
@@ -70,6 +71,8 @@ async function main() {
       entry.status = res.status;
       entry.type = res.headers.get('content-type') ?? '';
       if (!res.ok) continue;
+      // the site answers unknown paths with its HTML page: keep only real data and scripts
+      if (!START.some((p) => url === new URL(p, SITE).href) && /text\/html/i.test(entry.type)) continue;
       const buf = Buffer.from(await res.arrayBuffer());
       entry.bytes = buf.length;
       if (buf.length > MAX_BYTES) continue;

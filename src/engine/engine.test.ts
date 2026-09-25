@@ -139,3 +139,23 @@ describe('planner + simulation', () => {
     expect(plan.length).toBeGreaterThan(2);
   });
 });
+
+describe('community weights (Craft of Exile)', () => {
+  const file = JSON.parse(fs.readFileSync('public/data/weights.json', 'utf8'));
+  it('maps bases to groups and tiers to game modifiers', () => {
+    expect(file.bases['Gold Ring']).toBe('Ring');
+    const ring = file.groups.Ring;
+    expect(ring.IncreasedLife8).toBeGreaterThan(1);
+    // chaos resistance is rarer than fire resistance on rings
+    expect(ring.ChaosResist1).toBeLessThan(ring.FireResist1);
+    for (const id of Object.keys(ring)) expect(mods.some((m) => m.id === id)).toBe(true);
+  });
+  it('planner works with imported weights', () => {
+    const base = bases.find((b) => b.name === 'Gold Ring')!;
+    const ctx = buildCtx({ base, ilvl: 82, mods, prices, baseCost: 1, weightOverrides: file.groups.Ring });
+    const target: Target = { reqs: [req('IncreasedLife6'), req('FireResist5'), req('ChaosResist3')], need: 3 };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'omens')!);
+    const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 200, maxSteps: 6000, buyFirstBase: true });
+    expect(res.successRate).toBeGreaterThan(0.9);
+  });
+});
