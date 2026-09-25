@@ -1,0 +1,40 @@
+# Downloads raw Craft of Exile data (community mod weights for PoE 2) and
+# stores it on the "coe-data" branch, so it can be studied and imported.
+# GitHub runners have open internet access; the fetch is limited to once a day.
+name: Fetch Craft of Exile data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 4 * * *'
+  push:
+    branches: ['claude/**']
+    paths:
+      - .github/workflows/fetch-coe.yml
+      - scripts/fetch-coe.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-coe
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/fetch-coe.mjs "$RUNNER_TEMP/coe-raw"
+      - name: Publish to the coe-data branch
+        run: |
+          cd "$RUNNER_TEMP/coe-raw"
+          git init -q -b coe-data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Craft of Exile raw data $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" coe-data
