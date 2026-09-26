@@ -233,6 +233,17 @@ async function main() {
     const ruBases = {};
     for (const it of ndjson(ruItems)) if (it.namespace === 'ITEM' && baseNames.has(it.refName) && it.name) ruBases[it.name] = it.refName;
     await fs.writeFile(path.join(OUT, 'ru.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', templates, display, bases: ruBases }));
+
+    // Crafting items (currency, omens, essences, bones...): Russian name and icon
+    const [enItems] = await Promise.all([loadEe2('en/items.ndjson', ee2Dir)]);
+    const currency = {};
+    const CRAFT = new Set(['Currency', 'Omen']);
+    for (const it of ndjson(enItems))
+      if (it.namespace === 'ITEM' && it.craftable && CRAFT.has(it.craftable.category) && it.refName)
+        currency[it.refName] = { icon: it.icon || undefined };
+    for (const it of ndjson(ruItems)) if (currency[it.refName] && it.name) currency[it.refName].ru = it.name;
+    await fs.writeFile(path.join(OUT, 'currency.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', items: currency }));
+    console.log(`Currency: ${Object.keys(currency).length} crafting items with icons and Russian names`);
     console.log(`Russian: ${Object.keys(templates).length} line templates, ${Object.keys(ruBases).length} base names`);
   } catch (e) {
     console.warn(`Russian data skipped: ${e.message}`);

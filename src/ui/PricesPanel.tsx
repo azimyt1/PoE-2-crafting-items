@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { ItemIcon, itemRu, itemTitle } from './items';
 import { DEFAULT_PRICES } from '../engine/currency';
 import { DEFAULT_ESSENCE_PRICES } from '../engine/essences';
 import type { Prices } from '../engine/types';
-import { fmtCost, type DisplayCurrency } from './format';
+import { CURRENCY_LABEL, fmtCost, fmtNum, type DisplayCurrency } from './format';
 import { fetchNinjaPrices } from '../engine/ninja';
 
 export interface PricesFile {
@@ -10,6 +11,8 @@ export interface PricesFile {
   updatedAt: string;
   source: string;
   prices: Prices;
+  /** item name -> icon URL (from poe.ninja) */
+  icons?: Record<string, string>;
 }
 
 interface Props {
@@ -23,9 +26,11 @@ interface Props {
 }
 
 function group(name: string): string {
-  if (name.startsWith('Omen')) return 'Омены';
+  if (name.startsWith('Omen')) return 'Предзнаменования (омены)';
   if (/(Jawbone|Rib|Collarbone)$/.test(name)) return 'Кости Бездны (очернение)';
-  if (name.includes('Essence')) return 'Эссенции';
+  if (name.endsWith('Alloy')) return 'Сплавы (руноковка)';
+  if (name.includes('Essence')) return 'Сущности (эссенции)';
+  if (name.endsWith('Flux')) return 'Флюсы';
   return 'Сферы';
 }
 
@@ -60,7 +65,9 @@ export function PricesPanel({ prices, file, setFile, refresh, overrides, setOver
       setBusy(false);
     }
   }
-  const names = Object.keys({ ...DEFAULT_PRICES, ...DEFAULT_ESSENCE_PRICES }).filter((n) => !q || n.toLowerCase().includes(q.toLowerCase()));
+  const names = Object.keys({ ...DEFAULT_PRICES, ...DEFAULT_ESSENCE_PRICES }).filter(
+    (n) => !q || n.toLowerCase().includes(q.toLowerCase()) || itemRu(n).toLowerCase().includes(q.toLowerCase()),
+  );
   const groups = new Map<string, string[]>();
   for (const n of names) {
     const g = group(n);
@@ -73,7 +80,8 @@ export function PricesPanel({ prices, file, setFile, refresh, overrides, setOver
     <section className="card">
       <h2>Цены</h2>
       <p>
-        Все цены хранятся в <b>сферах возвышения</b> (Exalted Orb).{' '}
+        Цена в поле — <b>в сферах возвышения (экз) за 1 штуку</b>
+        {currency !== 'ex' ? <>, рядом — пересчёт в выбранную вверху валюту ({CURRENCY_LABEL[currency]})</> : null}.{' '}
         {file ? (
           <>
             Рыночные цены ({file.source}): лига <b>{file.league}</b>, обновлено {new Date(file.updatedAt).toLocaleString('ru-RU')}. Сервер обновляет их каждый час, открытая страница подхватывает новые цены сама.
@@ -83,8 +91,8 @@ export function PricesPanel({ prices, file, setFile, refresh, overrides, setOver
         )}
       </p>
       <p className="muted small">
-        1 божественная сфера = {prices['Divine Orb']} экз., 1 сфера хаоса = {prices['Chaos Orb']} экз. Ручная правка сохраняется в браузере и
-        имеет приоритет над загруженными ценами.
+        Курс: 1 божественная сфера = {fmtNum(prices['Divine Orb'])} экз., 1 сфера хаоса = {fmtNum(prices['Chaos Orb'])} экз. Ручная правка
+        сохраняется в браузере и имеет приоритет над загруженными ценами. Наведите на предмет, чтобы прочитать, что он делает.
       </p>
       <div className="row">
         <button
@@ -112,8 +120,14 @@ export function PricesPanel({ prices, file, setFile, refresh, overrides, setOver
           <h3>{g}</h3>
           <div className="prices">
             {list.map((n) => (
-              <label key={n} className={'price ' + (n in overrides ? 'manual' : '')}>
-                <span>{n}</span>
+              <label key={n} className={'price ' + (n in overrides ? 'manual' : '')} title={itemTitle(n)}>
+                <span className="pname">
+                  <ItemIcon name={n} size={24} />
+                  <span>
+                    {itemRu(n)}
+                    <span className="muted en">{n}</span>
+                  </span>
+                </span>
                 <input
                   type="number"
                   min={0}
@@ -128,7 +142,7 @@ export function PricesPanel({ prices, file, setFile, refresh, overrides, setOver
                   }}
                 />
                 <span className="muted small">
-                  {source(n)}
+                  экз · {source(n)}
                   {currency !== 'ex' && prices[n] !== undefined ? ` · ${fmtCost(prices[n], currency, prices)}` : ''}
                 </span>
               </label>

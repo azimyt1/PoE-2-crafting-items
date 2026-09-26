@@ -3,7 +3,8 @@
 
 import { useMemo, useState } from 'react';
 import { desecrationOptions, isValid, sample } from '../engine/actions';
-import { actionCost, actionTitleRu, canDesecrate, omenRu } from '../engine/currency';
+import { actionCost, actionItems, actionTitleRu, canDesecrate } from '../engine/currency';
+import { ItemIcon, itemRu, itemTitle } from './items';
 import { essencesForBase } from '../engine/essences';
 import type { Action, ActionKind, BoneTier, Ctx, FluxKind, Item, ModDef, OmenName, OrbTier, Prices } from '../engine/types';
 import { tierLabel, tierLabelEn, type Family } from './families';
@@ -61,6 +62,8 @@ const BONES: { bone: BoneTier; ru: string }[] = [
   { bone: 'Preserved', ru: 'Сохранившаяся' },
   { bone: 'Ancient', ru: 'Древняя' },
 ];
+
+const CUR_WORD: Record<DisplayCurrency, string> = { ex: 'сферах возвышения (экз)', div: 'божественных сферах (див)', chaos: 'сферах хаоса' };
 
 interface Step {
   item: Item;
@@ -148,9 +151,22 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
     setMsg('');
   }
 
+  function CurrencyButton({ action, onClick, note, adds }: { action: Action; onClick: () => void; note?: string; adds?: string[] }) {
+    const name = actionItems(action, ctx.base)[0] ?? '';
+    return (
+      <button className="currency" onClick={onClick} title={itemTitle(name, adds)}>
+        <ItemIcon name={name} />
+        <span className="cname">{itemRu(name)}</span>
+        <span className="muted small">
+          {note ? `${note} · ` : ''}
+          {price(action)}
+        </span>
+      </button>
+    );
+  }
+
   const toggleOmen = (o: OmenName) => setOmens((cur) => (cur.includes(o) ? cur.filter((x) => x !== o) : [...cur, o]));
   const price = (a: Action) => fmtCost(actionCost(a, ctx.base, prices, ctx.baseCost), currency, prices);
-  const tierWord = ['', 'Большая ', 'Совершенная '][tier];
 
   return (
     <section className="tracker">
@@ -223,31 +239,28 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
             <option value={2}>совершенные (Perfect)</option>
           </select>
         </label>
+        <p className="muted small">Цены — в {CUR_WORD[currency]} за штуку. Наведите на валюту, чтобы прочитать, что она делает.</p>
         <div className="sbbuttons">
           {ORBS.map((o) => {
             const a: Action = o.tiered ? { kind: o.kind, tier } : { kind: o.kind };
-            return (
-              <button key={o.kind} onClick={() => apply(a)} title={actionTitleRu(a, ctx.base)}>
-                {o.tiered && tier ? tierWord : ''}
-                {o.ru} <span className="muted small">{price(a)}</span>
-              </button>
-            );
+            return <CurrencyButton key={o.kind} action={a} onClick={() => apply(a)} />;
           })}
         </div>
         <h3>Омены (срабатывают на следующей подходящей валюте)</h3>
         <div className="sbomens">
           {(Object.keys(OMEN_FOR) as OmenName[]).map((o) => (
-            <label key={o} className="inline small">
-              <input type="checkbox" checked={omens.includes(o)} onChange={() => toggleOmen(o)} /> {omenRu(o)}
+            <label key={o} className={'omen' + (omens.includes(o) ? ' on' : '')} title={itemTitle(o)}>
+              <input type="checkbox" checked={omens.includes(o)} onChange={() => toggleOmen(o)} />
+              <ItemIcon name={o} size={24} />
+              <span>{itemRu(o)}</span>
+              <span className="muted small">{fmtCost(prices[o] ?? NaN, currency, prices)}</span>
             </label>
           ))}
         </div>
         <h3>Флюсы</h3>
         <div className="sbbuttons">
           {FLUXES.map((f) => (
-            <button key={f.flux} onClick={() => apply({ kind: 'flux', flux: f.flux })}>
-              {f.ru} <span className="muted small">{price({ kind: 'flux', flux: f.flux })}</span>
-            </button>
+            <CurrencyButton key={f.flux} action={{ kind: 'flux', flux: f.flux }} onClick={() => apply({ kind: 'flux', flux: f.flux })} />
           ))}
         </div>
         {canDesecrate(ctx.base) && (
@@ -255,23 +268,25 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
             <h3>Кости Бездны (очернение)</h3>
             <div className="sbbuttons">
               {BONES.map((b) => (
-                <button key={b.bone} onClick={() => apply({ kind: 'desecrate', bone: b.bone })}>
-                  {b.ru} кость <span className="muted small">{price({ kind: 'desecrate', bone: b.bone })}</span>
-                </button>
+                <CurrencyButton key={b.bone} action={{ kind: 'desecrate', bone: b.bone }} onClick={() => apply({ kind: 'desecrate', bone: b.bone })} />
               ))}
             </div>
           </>
         )}
         {essences.length > 0 && (
           <>
-            <h3>Эссенции и сплавы для этой базы</h3>
+            <h3>Сущности (эссенции) и сплавы для этой базы</h3>
             <div className="sbbuttons">
               {essences.map((e) => {
                 const a: Action = { kind: 'essence', essence: { name: e.name, modIds: e.mods.map((m) => m.id), rare: e.rare } };
                 return (
-                  <button key={e.name} onClick={() => apply(a)} title={e.mods.map((m) => m.x.replace(/\n/g, ' / ')).join(' или ')}>
-                    {e.ru} <span className="muted small">{e.rare ? 'редкий' : 'магический'} · {price(a)}</span>
-                  </button>
+                  <CurrencyButton
+                    key={e.name}
+                    action={a}
+                    onClick={() => apply(a)}
+                    note={e.rare ? 'на редкий' : 'на магический'}
+                    adds={e.mods.map((m) => ruText(m.x))}
+                  />
                 );
               })}
             </div>

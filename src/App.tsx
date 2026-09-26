@@ -14,6 +14,7 @@ import { PricesPanel, type PricesFile } from './ui/PricesPanel';
 import { WeightsPanel } from './ui/WeightsPanel';
 import { Sandbox } from './ui/Sandbox';
 import { setRuDisplay } from './engine/ruText';
+import { setItemData } from './ui/items';
 import { CurrentItem, type ItemInfo } from './ui/CurrentItem';
 import { HowItWorks } from './ui/HowItWorks';
 import { WorkerClient } from './ui/workerClient';
@@ -149,6 +150,12 @@ export default function App() {
           essencesFile = null;
         }
         setRuDisplay(ru?.display);
+        try {
+          const cur = await get('currency.json');
+          setItemData(cur.items, pricesFile?.icons);
+        } catch {
+          setItemData(undefined, pricesFile?.icons);
+        }
         setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile, essences: essencesFile });
         setPricesFile(pricesFile);
         const c = new WorkerClient();

@@ -46,7 +46,8 @@ async function main() {
     process.exit(1);
   }
   console.log(`Fetching prices for league "${league}"`);
-  const prices = await fetchNinjaPrices(league, getJson, (m) => console.log(m));
+  const icons = {};
+  const prices = await fetchNinjaPrices(league, getJson, (m) => console.log(m), icons);
   if (!prices) {
     console.error('Could not find the Exalted Orb rate; prices not written.');
     process.exit(1);
@@ -57,7 +58,7 @@ async function main() {
     process.exit(1);
   }
   await fs.mkdir(path.dirname(OUT), { recursive: true });
-  await fs.writeFile(OUT, JSON.stringify({ league, updatedAt: new Date().toISOString(), source: 'poe.ninja', prices }, null, 1));
+  await fs.writeFile(OUT, JSON.stringify({ league, updatedAt: new Date().toISOString(), source: 'poe.ninja', prices, icons }, null, 1));
   console.log(`Wrote ${n} prices to ${OUT}`);
 }
 

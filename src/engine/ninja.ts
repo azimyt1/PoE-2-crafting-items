@@ -8,6 +8,8 @@ export const NINJA_TYPES = ['Currency', 'Essences', 'Omens', 'Abyss', 'Ritual', 
 
 export interface NinjaOverview {
   values: Map<string, number>;
+  /** item name -> icon URL */
+  icons: Map<string, string>;
   primary?: string;
   rates: Record<string, number>;
 }
@@ -23,6 +25,8 @@ interface RawLine {
 interface RawItem {
   id?: string;
   name?: string;
+  image?: string;
+  icon?: string;
 }
 interface RawOverview {
   items?: RawItem[];
@@ -32,14 +36,19 @@ interface RawOverview {
 
 export function parseOverview(json: RawOverview): NinjaOverview {
   const items = new Map<string, string>();
-  for (const it of [...(json.items ?? []), ...(json.core?.items ?? [])]) if (it && it.id && it.name) items.set(it.id, it.name);
+  const icons = new Map<string, string>();
+  for (const it of [...(json.items ?? []), ...(json.core?.items ?? [])]) {
+    if (it && it.id && it.name) items.set(it.id, it.name);
+    const img = it?.image || it?.icon;
+    if (it?.name && typeof img === 'string') icons.set(it.name, img.startsWith('/') ? `https://web.poecdn.com${img}` : img);
+  }
   const values = new Map<string, number>();
   for (const line of json.lines ?? []) {
     const name = (line.id && items.get(line.id)) || line.name || line.currencyTypeName;
     const v = line.primaryValue ?? line.chaosEquivalent ?? line.value;
     if (name && typeof v === 'number' && v > 0) values.set(name, v);
   }
-  return { values, primary: json.core?.primary, rates: json.core?.rates ?? {} };
+  return { values, icons, primary: json.core?.primary, rates: json.core?.rates ?? {} };
 }
 
 /**
@@ -62,6 +71,7 @@ export async function fetchNinjaPrices(
   league: string,
   fetcher: (url: string) => Promise<unknown>,
   log: (msg: string) => void = () => {},
+  icons?: Record<string, string>,
 ): Promise<Record<string, number> | null> {
   const values = new Map<string, number>();
   let primary: string | undefined;
@@ -72,6 +82,7 @@ export async function fetchNinjaPrices(
       primary = primary ?? j.primary;
       if (Object.keys(j.rates).length) rates = j.rates;
       for (const [k, v] of j.values) values.set(k, v);
+      if (icons) for (const [k, v] of j.icons) icons[k] = v;
       log(`  ${type}: ${j.values.size} items`);
     } catch (e) {
       log(`  ${type}: skipped (${e instanceof Error ? e.message : String(e)})`);
