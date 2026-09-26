@@ -15,10 +15,19 @@ import path from 'node:path';
 const SITE = 'https://www.craftofexile.com';
 const OUT = path.resolve(process.argv[2] ?? 'coe-raw');
 const UA = 'poe2-craft-assistant (github.com/azimyt1/PoE-2-crafting-items)';
-const MAX_FILES = 60;
+const MAX_FILES = 120;
 const MAX_BYTES = 60 * 1024 * 1024;
 
-const START = ['/?game=poe2', '/weightings?game=poe2', '/emulator?game=poe2'];
+const BETA = 'https://beta.craftofexile.com';
+const START = [
+  '/?game=poe2',
+  '/weightings?game=poe2',
+  '/emulator?game=poe2',
+  // the new version of the site (newer patch data)
+  `${BETA}/?game=poe2`,
+  `${BETA}/whats-new?game=poe2`,
+  `${BETA}/roadmap?game=poe2`,
+];
 // Paths used by the site in the past; tried in case the pages load them indirectly.
 const GUESSES = [
   '/json/poe2/main/poec_data.json',
@@ -33,8 +42,9 @@ const index = [];
 
 function fileName(url) {
   const u = new URL(url);
+  const host = u.hostname === 'www.craftofexile.com' ? '' : u.hostname.split('.')[0] + '_';
   const name = (u.pathname + (u.search ? '_' + u.search.slice(1) : '')).replace(/^\/+/, '').replace(/[^a-zA-Z0-9._-]+/g, '_');
-  return name || 'index.html';
+  return host + (name || 'index.html');
 }
 
 function refsIn(text, base) {
@@ -47,8 +57,8 @@ function refsIn(text, base) {
     for (const m of text.matchAll(re)) {
       try {
         // bare paths in scripts ("json/poe2/...") are relative to the site root
-        const u = new URL(m[1], /^(https?:|\/|\.)/.test(m[1]) ? base : SITE + '/');
-        if (u.hostname.endsWith('craftofexile.com') && /\.(js|json)$/i.test(u.pathname)) out.add(u.href);
+        const u = new URL(m[1], /^(https?:|\/|\.)/.test(m[1]) ? base : new URL(base).origin + '/');
+        if (u.hostname.endsWith('craftofexile.com') && /\.(js|json|mjs)$/i.test(u.pathname)) out.add(u.href);
       } catch {
         // not a URL
       }

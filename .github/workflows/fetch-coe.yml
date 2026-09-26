@@ -3,10 +3,15 @@
 # GitHub runners have open internet access.
 name: Fetch Craft of Exile data
 
-# Manual only (Actions -> Fetch Craft of Exile data -> Run workflow): the
-# weights themselves are refreshed by the deploy workflow (npm run coe).
+# Manual (Actions -> Fetch Craft of Exile data -> Run workflow), or when the
+# crawler itself changes. The weights and essences used by the app are
+# refreshed by the deploy workflow (npm run coe).
 on:
   workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - scripts/fetch-coe.mjs
 
 permissions:
   contents: write
