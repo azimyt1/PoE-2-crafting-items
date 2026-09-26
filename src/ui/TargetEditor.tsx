@@ -8,6 +8,8 @@ interface Props {
   setReqs: (r: TargetReq[]) => void;
   need: number;
   setNeed: (n: number) => void;
+  open: { p: number; s: number };
+  setOpen: (o: { p: number; s: number }) => void;
   rareCap: { p: number; s: number };
 }
 
@@ -17,7 +19,7 @@ export function reqLabel(f: Family, minLevel: number): string {
   return `${f.name} — от T${ok.length} (${worst ? worst.x.replace(/\n/g, ' / ') : '?'})`;
 }
 
-export function TargetEditor({ families, reqs, setReqs, need, setNeed, rareCap }: Props) {
+export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, setOpen, rareCap }: Props) {
   const [q, setQ] = useState('');
   const byFam = new Map(families.map((f) => [f.fam, f]));
   const chosen = new Set(reqs.map((r) => r.fam));
@@ -117,6 +119,29 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, rareCap }
             ))}
           </select>
         </label>
+      )}
+      <div className="row">
+        <label className="inline" title="Свободное место нужно, чтобы потом добавить мод оменом, эссенцией или сплавом">
+          Оставить свободными: префиксов
+          <select value={open.p} onChange={(e) => setOpen({ ...open, p: +e.target.value })}>
+            {Array.from({ length: rareCap.p + 1 }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+          суффиксов
+          <select value={open.s} onChange={(e) => setOpen({ ...open, s: +e.target.value })}>
+            {Array.from({ length: rareCap.s + 1 }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {(nP + open.p > rareCap.p || nS + open.s > rareCap.s) && open.p + open.s > 0 && (
+        <div className="warn">Нужные моды и свободные места не помещаются на эту базу.</div>
       )}
       <input className="search" placeholder="Поиск мода (по-английски, как в игре: life, resistance, attack speed…)" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="famcols">

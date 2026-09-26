@@ -180,7 +180,16 @@ export function analyze(item: Item, ctx: Ctx, target: Target): Analysis {
   }
   // A blocker is only relevant if its req is still missing.
   for (let k = 0; k < modBlocks.length; k++) if (modBlocks[k] >= 0 && met.has(modBlocks[k])) modBlocks[k] = -1;
-  return { met, goal: met.size >= target.need, modReq, modBlocks };
+  return { met, goal: met.size >= target.need && hasOpenSlots(item, ctx, target), modReq, modBlocks };
+}
+
+/** The item keeps the free slots the target asks for (only a rare item can). */
+export function hasOpenSlots(item: Item, ctx: Ctx, target: Target): boolean {
+  const need = target.open;
+  if (!need || (need.p <= 0 && need.s <= 0)) return true;
+  if (item.rarity !== 'rare') return false;
+  const open = openSlots(item, ctx);
+  return open.p >= need.p && open.s >= need.s;
 }
 
 export function itemSignature(item: Item): string {

@@ -44,6 +44,7 @@ interface Saved {
   baseCost: number;
   reqs: TargetReq[];
   need: number;
+  open?: { p: number; s: number };
   priceOverrides: Prices;
   weights: Record<string, number>;
   currency: DisplayCurrency;
@@ -85,6 +86,7 @@ export default function App() {
   const [baseCost, setBaseCost] = useState(saved.baseCost ?? 1);
   const [reqs, setReqs] = useState<TargetReq[]>(saved.reqs ?? []);
   const [need, setNeed] = useState(saved.need ?? 0);
+  const [open, setOpen] = useState(saved.open ?? { p: 0, s: 0 });
   const [priceOverrides, setPriceOverrides] = useState<Prices>(saved.priceOverrides ?? {});
   const [weights, setWeights] = useState<Record<string, number>>(saved.weights ?? {});
   const [currency, setCurrency] = useState<DisplayCurrency>(saved.currency ?? 'ex');
@@ -148,12 +150,12 @@ export default function App() {
   // ---- persist
   useEffect(() => {
     try {
-      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode };
+      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, open, priceOverrides, weights, currency, trials, linkMode };
       localStorage.setItem(STORE_KEY, JSON.stringify(s));
     } catch {
       /* storage unavailable */
     }
-  }, [cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode]);
+  }, [cls, baseId, ilvl, baseCost, reqs, need, open, priceOverrides, weights, currency, trials, linkMode]);
 
   const parser = useMemo(() => (data ? new ItemParser(data.bases, data.mods, data.ru ?? undefined) : null), [data]);
 
@@ -244,8 +246,12 @@ export default function App() {
 
   const setup: Setup | null = useMemo(() => {
     if (!base || !reqs.length) return null;
-    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights: effWeights, essences };
-  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, effWeights, essences]);
+    // free slots beyond the base's capacity are clamped
+    const cap = ctx?.rareCap ?? { p: 3, s: 3 };
+    const o = { p: Math.min(open.p, cap.p), s: Math.min(open.s, cap.s) };
+    const target = { reqs, need: effectiveNeed, ...(o.p + o.s > 0 ? { open: o } : {}) };
+    return { baseId: base.id, ilvl, target, prices, baseCost, weights: effWeights, essences };
+  }, [base, ilvl, reqs, effectiveNeed, open, ctx, prices, baseCost, effWeights, essences]);
 
   const setupKey = setup ? JSON.stringify(setup) : '';
 
@@ -341,7 +347,7 @@ export default function App() {
             <div className="muted small">Скопированный предмет сразу выставит базу, уровень предмета и текущие моды для трекера.</div>
           </section>
           {ctx && (
-            <TargetEditor families={families} reqs={reqs} setReqs={setReqs} need={effectiveNeed} setNeed={setNeed} rareCap={ctx.rareCap} />
+            <TargetEditor families={families} reqs={reqs} setReqs={setReqs} need={effectiveNeed} setNeed={setNeed} open={open} setOpen={setOpen} rareCap={ctx.rareCap} />
           )}
           <div className="card actions">
             <label className="inline">

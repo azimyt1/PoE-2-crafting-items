@@ -7,7 +7,7 @@ import { explainPlan, makeRng, simulate } from './simulate';
 import { STRATEGIES } from './strategies';
 import { DEFAULT_PRICES } from './currency';
 import { DEFAULT_ESSENCE_PRICES, essencesForBase } from './essences';
-import type { BaseDef, ModDef, Target } from './types';
+import type { BaseDef, Item, ModDef, Target } from './types';
 
 const mods: ModDef[] = JSON.parse(fs.readFileSync('public/data/mods.json', 'utf8'));
 const bases: BaseDef[] = JSON.parse(fs.readFileSync('public/data/bases.json', 'utf8'));
@@ -193,5 +193,30 @@ describe('community weights (Craft of Exile)', () => {
     const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'omens')!);
     const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 200, maxSteps: 6000, buyFirstBase: true });
     expect(res.successRate).toBeGreaterThan(0.9);
+  });
+});
+
+describe('open slots in the target', () => {
+  it('finished item keeps the requested free suffix', () => {
+    const ctx = ctxFor('Gold Ring');
+    const target: Target = { reqs: [req('IncreasedLife6'), req('FireResist5')], need: 2, open: { p: 0, s: 2 } };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'full')!);
+    const rng = makeRng(4);
+    let ok = 0;
+    for (let t = 0; t < 60; t++) {
+      let item: Item = { rarity: 'normal', mods: [] };
+      for (let k = 0; k < 3000; k++) {
+        const d = planner.decide(item);
+        if (d.done || !d.action) break;
+        item = sample(item, ctx, d.action, rng, planner.preferFor(item));
+      }
+      if (planner.decide(item).done) {
+        ok++;
+        expect(item.rarity).toBe('rare');
+        const suffixes = item.mods.filter((m) => ctx.byId.get(m.id)!.s === 's').length;
+        expect(suffixes).toBeLessThanOrEqual(1);
+      }
+    }
+    expect(ok).toBeGreaterThan(55);
   });
 });

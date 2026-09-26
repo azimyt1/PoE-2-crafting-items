@@ -70,6 +70,8 @@ export interface Target {
   reqs: TargetReq[];
   /** how many of reqs must be on the item (default: all) */
   need: number;
+  /** free prefix / suffix slots the finished rare item must keep (for later crafting) */
+  open?: { p: number; s: number };
 }
 
 /** Prices in Exalted Orbs, keyed by in-game English item name. */

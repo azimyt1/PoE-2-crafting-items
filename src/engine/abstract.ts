@@ -151,7 +151,12 @@ export class AbstractModel {
   }
 
   isGoal(s: S): boolean {
-    return popcount(s.met) >= this.target.need;
+    if (popcount(s.met) < this.target.need) return false;
+    const open = this.target.open;
+    if (!open || (open.p <= 0 && open.s <= 0)) return true;
+    if (s.r !== 2) return false;
+    const cap = this.cap(2);
+    return cap.p - this.used(s, 'p') >= open.p && cap.s - this.used(s, 's') >= open.s;
   }
 
   cap(r: number): { p: number; s: number } {
