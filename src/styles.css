@@ -422,3 +422,49 @@ code {
   padding: 1px 4px;
   border-radius: 3px;
 }
+
+/* sandbox */
+.sandbox-item {
+  border: 1px solid var(--line);
+  background: var(--card2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0;
+}
+.sandbox-item .rarity {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+.sandbox-item.magic .rarity {
+  color: var(--magic);
+}
+.sandbox-item.rare .rarity {
+  color: var(--rare);
+}
+.sbmod.fractured {
+  color: var(--gold2);
+}
+.sbmod.desecrated {
+  color: var(--desecrated);
+}
+.sbbuttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.sbomens {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 2px 12px;
+}
+.card2 {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}

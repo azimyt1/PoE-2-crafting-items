@@ -352,6 +352,24 @@ function addRandom(item: Item, ctx: Ctx, f: AddFilter, rng: Rng, extra: Partial<
   return true;
 }
 
+/** The (up to) 3 modifiers a desecration reveals to choose from, on one random side. */
+export function desecrationOptions(item: Item, ctx: Ctx, a: Action, rng: Rng): ModDef[] {
+  const sides = desecrationSides(item, ctx, a).filter((s) => desecrationPool(item, ctx, a, s).length > 0);
+  if (!sides.length) return [];
+  const side = sides[Math.floor(rng() * sides.length)];
+  const pool = [...desecrationPool(item, ctx, a, side)];
+  const options: ModDef[] = [];
+  for (let k = 0; k < 3 && pool.length; k++) {
+    const m = pick(pool, rng)!;
+    options.push(m);
+    pool.splice(
+      pool.findIndex((e) => e.mod === m),
+      1,
+    );
+  }
+  return options;
+}
+
 /** Apply an action randomly. `prefer` scores desecration options (higher = better). */
 export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: ModDef) => number): Item {
   const it = cloneItem(item);
@@ -427,19 +445,8 @@ export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: M
       return it;
     }
     case 'desecrate': {
-      const sides = desecrationSides(item, ctx, a).filter((s) => desecrationPool(item, ctx, a, s).length > 0);
-      if (!sides.length) return it;
-      const side = sides[Math.floor(rng() * sides.length)];
-      const pool = [...desecrationPool(item, ctx, a, side)];
-      const options: ModDef[] = [];
-      for (let k = 0; k < 3 && pool.length; k++) {
-        const m = pick(pool, rng)!;
-        options.push(m);
-        pool.splice(
-          pool.findIndex((e) => e.mod === m),
-          1,
-        );
-      }
+      const options = desecrationOptions(item, ctx, a, rng);
+      if (!options.length) return it;
       options.sort((x, y) => (prefer ? prefer(y) - prefer(x) : 0));
       it.mods.push({ id: options[0].id, de: true });
       return it;

@@ -12,6 +12,7 @@ import { Results } from './ui/Results';
 import { Tracker } from './ui/Tracker';
 import { PricesPanel, type PricesFile } from './ui/PricesPanel';
 import { WeightsPanel } from './ui/WeightsPanel';
+import { Sandbox } from './ui/Sandbox';
 import { HowItWorks } from './ui/HowItWorks';
 import { WorkerClient } from './ui/workerClient';
 import { GameLink, type LinkMode } from './ui/GameLink';
@@ -62,7 +63,7 @@ function loadSaved(): Partial<Saved> {
   }
 }
 
-type Tab = 'goal' | 'results' | 'tracker' | 'prices' | 'weights' | 'help';
+type Tab = 'goal' | 'results' | 'tracker' | 'sandbox' | 'prices' | 'weights' | 'help';
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
@@ -287,6 +288,7 @@ export default function App() {
     ['goal', '1. Предмет и цель'],
     ['results', '2. Варианты крафта'],
     ['tracker', '3. Трекер крафта'],
+    ['sandbox', 'Песочница'],
     ['prices', 'Цены'],
     ['weights', 'Веса модов'],
     ['help', 'Как это работает'],
@@ -418,6 +420,7 @@ export default function App() {
         />
       )}
 
+      {tab === 'sandbox' && ctx && <Sandbox ctx={ctx} families={families} currency={currency} prices={prices} />}
       {tab === 'weights' && ctx && <WeightsPanel
           families={families}
           weights={weights}
