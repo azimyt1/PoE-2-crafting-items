@@ -12,6 +12,8 @@ interface Props {
   baseCost: number;
   setBaseCost: (n: number) => void;
   rareCap?: { p: number; s: number };
+  /** crafting a bought item: the price is that of buying it again */
+  fromItem?: boolean;
 }
 
 export function ItemSetup(p: Props) {
@@ -45,7 +47,7 @@ export function ItemSetup(p: Props) {
           <input type="number" min={1} max={100} value={p.ilvl} onChange={(e) => p.setIlvl(Math.max(1, Math.min(100, +e.target.value || 1)))} />
         </label>
         <label>
-          Цена одной базы (в сферах возвышения)
+          {p.fromItem ? 'Цена такого же предмета на трейде (в сферах возвышения)' : 'Цена одной базы (в сферах возвышения)'}
           <input type="number" min={0} step={0.1} value={p.baseCost} onChange={(e) => p.setBaseCost(Math.max(0, +e.target.value || 0))} />
         </label>
       </div>

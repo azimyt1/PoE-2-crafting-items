@@ -231,7 +231,7 @@ export function outcomes(
 ): Outcome[] {
   switch (a.kind) {
     case 'restart':
-      return [{ p: 1, item: { rarity: 'normal', mods: [] } }];
+      return [{ p: 1, item: ctx.restartItem ? cloneItem(ctx.restartItem) : { rarity: 'normal', mods: [] } }];
     case 'transmute':
       return addOutcomes({ rarity: 'magic', mods: [] }, ctx, addFilterFor(item, a)!, 'magic', classify);
     case 'augment':
@@ -375,7 +375,7 @@ export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: M
   const it = cloneItem(item);
   switch (a.kind) {
     case 'restart':
-      return { rarity: 'normal', mods: [] };
+      return ctx.restartItem ? cloneItem(ctx.restartItem) : { rarity: 'normal', mods: [] };
     case 'transmute':
       it.rarity = 'magic';
       it.mods = [];

@@ -259,3 +259,42 @@ describe('fluxes', () => {
     expect(d.action).toEqual({ kind: 'flux', flux: 'Void' });
   });
 });
+
+describe('requirement groups', () => {
+  it('"any one of" group is reached by a single member', () => {
+    const ctx = ctxFor('Gold Ring');
+    const g = (id: string) => ({ ...req(id), group: 1 });
+    const target: Target = { reqs: [req('IncreasedLife6'), g('FireResist5'), g('ColdResist5'), g('LightningResist5')], need: 1, groupNeed: { 1: 1 } };
+    const only = (ids: string[]) => ({ rarity: 'rare' as const, mods: ids.map((id) => ({ id })) });
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'full')!);
+    expect(planner.decide(only(['IncreasedLife8', 'ColdResist7'])).done).toBe(true);
+    expect(planner.decide(only(['IncreasedLife8'])).done).toBe(false);
+    expect(planner.decide(only(['ColdResist7', 'FireResist7'])).done).toBe(false);
+    const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 200, maxSteps: 6000, buyFirstBase: true });
+    expect(res.successRate).toBeGreaterThan(0.95);
+  });
+
+  it('kept modifiers plus an "any resistance" group on a real item', () => {
+    const base = bases.find((b) => b.name === 'Sacramental Robe')!;
+    const item: Item = {
+      rarity: 'rare',
+      mods: ['LocalIncreasedEnergyShield11', 'LocalIncreasedEnergyShieldAndBase5', 'IncreasedLife12', 'FireResist5', 'ChaosResist6'].map((id) => ({ id })),
+    };
+    // starting over = buying the same robe again for 50 exalts
+    const ctx = buildCtx({ base, ilvl: 82, mods, prices, baseCost: 50, essences: essenceFile.groups[essenceFile.bases[base.name]], restartItem: item });
+    const kept = item.mods.map((m) => {
+      const d = mods.find((x) => x.id === m.id)!;
+      return { fam: d.f, minLevel: d.l, side: d.s, label: d.x, group: -1 };
+    });
+    const g = (id: string) => ({ ...req(id), group: 1 });
+    const target: Target = { reqs: [...kept, g('ColdResist5'), g('LightningResist5')], need: 0, groupNeed: { '-1': 5, 1: 1 } };
+    const t0 = Date.now();
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'omens')!);
+    const d = planner.decide(item);
+    expect(d.done).toBe(false);
+    expect(d.action).toBeDefined();
+    expect(Date.now() - t0).toBeLessThan(20000);
+    const res = simulate(planner, item, { trials: 100, maxSteps: 3000, buyFirstBase: false });
+    expect(res.successRate).toBeGreaterThan(0.95);
+  });
+});

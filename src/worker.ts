@@ -21,7 +21,7 @@ function post(msg: WorkerResponse) {
 function ctxFor(setup: Setup): Ctx {
   const base = bases.get(setup.baseId);
   if (!base) throw new Error('База не найдена');
-  return buildCtx({ base, ilvl: setup.ilvl, mods, prices: setup.prices, baseCost: setup.baseCost, weightOverrides: setup.weights, essences: setup.essences });
+  return buildCtx({ base, ilvl: setup.ilvl, mods, prices: setup.prices, baseCost: setup.baseCost, weightOverrides: setup.weights, essences: setup.essences, restartItem: setup.restartItem });
 }
 
 function plannerFor(setup: Setup, strategyId: string): Planner {
@@ -56,20 +56,22 @@ function planView(ctx: Ctx, steps: PlanStep[]): PlanStepView[] {
   }));
 }
 
-function evaluate(id: number, setup: Setup, trials: number, strategyIds?: string[]) {
+function evaluate(id: number, setup: Setup, trials: number, strategyIds?: string[], from?: Item) {
   for (const s of STRATEGIES) {
     if (strategyIds && !strategyIds.includes(s.id)) continue;
     const planner = plannerFor(setup, s.id);
-    const start: Item = { rarity: 'normal', mods: [] };
+    // from the item being crafted, or from a fresh base
+    const start: Item = from ?? { rarity: 'normal', mods: [] };
+    const fresh = !from;
     const impossible = planner.impossible(start);
     const sim = impossible
       ? null
-      : simulate(planner, start, { trials, maxSteps: 4000, buyFirstBase: true, seed: 11 });
+      : simulate(planner, start, { trials, maxSteps: 4000, buyFirstBase: fresh, seed: 11 });
     const result: StrategyResult = {
       strategyId: s.id,
       name: s.name,
       description: s.description,
-      estimate: impossible ? Infinity : planner.restartCost,
+      estimate: impossible ? Infinity : fresh ? planner.restartCost : planner.H(start),
       successRate: sim?.successRate ?? 0,
       meanCost: sim?.meanCost ?? Infinity,
       medianCost: sim?.medianCost ?? Infinity,
@@ -156,7 +158,7 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
         post({ type: 'ready' });
         break;
       case 'evaluate':
-        evaluate(msg.id, msg.setup, msg.trials, msg.strategyIds);
+        evaluate(msg.id, msg.setup, msg.trials, msg.strategyIds, msg.start);
         break;
       case 'advise':
         advise(msg.id, msg.setup, msg.strategyId, msg.item, msg.trials);

@@ -29,6 +29,14 @@ export interface ParsedItem {
   unidentified: boolean;
   advanced: boolean;
   language: 'en' | 'ru';
+  /** rare item name ("Honour Suit") */
+  name?: string;
+  /** property lines: defences, requirements, sockets... */
+  props: string[];
+  /** implicit modifier lines of the base */
+  implicits: string[];
+  /** rune / enchant lines */
+  runes: string[];
 }
 
 /** Must stay identical to template() in scripts/build-data.mjs */
@@ -397,7 +405,21 @@ export class ItemParser {
 
     // implicit lines (for telling apart bases with the same name)
     const implicitText: string[] = [];
+    // everything else shown on the item, for display
+    const props: string[] = [];
+    const runes: string[] = [];
+    for (const sec of sections.slice(1))
+      for (const l of sec) {
+        if (/^\{.*\}$/.test(l)) continue;
+        if (/\((rune|enchant|руна|зачарование)\)$/i.test(l)) runes.push(l.replace(TAIL_FLAGS, ''));
+        else if (/^(Item Level|Уровень предмета|Note|Rarity|Редкость|Item Class|Класс предмета):/i.test(l)) continue;
+        else if (/:\s/.test(l) && !/\d%?\s/.test(l.split(':')[0])) props.push(l.replace(/\s*\(augmented\)$/i, ''));
+      }
     const out: ParsedItem = {
+      name: rarity === 'rare' || rarity === 'unique' ? nameLines[0] : undefined,
+      props,
+      implicits: implicitText,
+      runes,
       itemClass,
       rarity,
       baseName: '',

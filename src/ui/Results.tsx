@@ -11,6 +11,8 @@ interface Props {
   prices: Prices;
   onRecalc: () => void;
   onTrack: (strategyId: string) => void;
+  /** the calculation starts from the current item, not a fresh base */
+  fromItem?: boolean;
 }
 
 export function PlanSteps({ steps, currency, prices }: { steps: PlanStepView[]; currency: DisplayCurrency; prices: Prices }) {
@@ -38,7 +40,7 @@ export function PlanSteps({ steps, currency, prices }: { steps: PlanStepView[]; 
   );
 }
 
-export function Results({ results, running, stale, currency, prices, onRecalc, onTrack }: Props) {
+export function Results({ results, running, stale, currency, prices, onRecalc, onTrack, fromItem }: Props) {
   const [open, setOpen] = useState<string | null>(null);
   const sorted = [...results].sort((a, b) => {
     const ka = a.successRate < 0.5 ? 1 : 0;
@@ -49,6 +51,9 @@ export function Results({ results, running, stale, currency, prices, onRecalc, o
   return (
     <section className="card">
       <h2>Варианты крафта</h2>
+      {fromItem && (
+        <p className="muted small">Расчёт от текущего предмета: суммы — сколько ещё потратить, без цены самого предмета.</p>
+      )}
       {stale && (
         <div className="warn">
           Цель или цены изменились после расчёта. <button onClick={onRecalc}>Пересчитать</button>
@@ -72,7 +77,11 @@ export function Results({ results, running, stale, currency, prices, onRecalc, o
                 <th title="Средняя стоимость с учётом новых баз">В среднем</th>
                 <th title="Половина попыток дешевле этой суммы">Медиана</th>
                 <th title="9 из 10 попыток дешевле этой суммы">90%</th>
-                <th title="Сколько баз в среднем уходит в мусор">Новых баз</th>
+                {fromItem ? (
+                  <th title="Сколько раз в среднем придётся покупать такой же предмет заново">Покупок заново</th>
+                ) : (
+                  <th title="Сколько баз в среднем уходит в мусор">Новых баз</th>
+                )}
                 <th />
               </tr>
             </thead>

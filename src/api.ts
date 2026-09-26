@@ -11,6 +11,8 @@ export interface Setup {
   weights: Record<string, number>;
   /** essences and alloys usable on this base */
   essences: EssenceDef[];
+  /** crafting a bought item: starting over means buying it again */
+  restartItem?: Item;
 }
 
 export interface StrategyResult {
@@ -61,7 +63,7 @@ export interface Advice {
 
 export type WorkerRequest =
   | { type: 'init'; mods: ModDef[]; bases: BaseDef[] }
-  | { type: 'evaluate'; id: number; setup: Setup; trials: number; strategyIds?: string[] }
+  | { type: 'evaluate'; id: number; setup: Setup; trials: number; strategyIds?: string[]; start?: Item }
   | { type: 'advise'; id: number; setup: Setup; strategyId: string; item: Item; trials: number }
   | { type: 'roll'; id: number; setup: Setup; strategyId: string; item: Item; action: Action; seed: number };
 

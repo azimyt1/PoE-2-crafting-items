@@ -36,6 +36,7 @@ export function buildCtx(opts: {
   baseCost: number;
   weightOverrides?: Record<string, number>;
   essences?: EssenceDef[];
+  restartItem?: Item;
 }): Ctx {
   const { base, ilvl, mods, prices, baseCost } = opts;
   const tags = new Set(base.tags);
@@ -71,7 +72,20 @@ export function buildCtx(opts: {
       for (const x of m.g) g.add(x);
       if (!inPool.has(id) && !essenceMods.includes(m)) essenceMods.push(m);
     }
-  return { base, ilvl, regular, lords, byId, rareCap: rareCapacity(base), prices, baseCost, famGroups, essences, essenceMods };
+  return {
+    base,
+    ilvl,
+    regular,
+    lords,
+    byId,
+    rareCap: rareCapacity(base),
+    prices,
+    baseCost,
+    famGroups,
+    essences,
+    essenceMods,
+    ...(opts.restartItem ? { restartItem: opts.restartItem } : {}),
+  };
 }
 
 export function capacity(item: Item, ctx: Ctx): { p: number; s: number } {
@@ -181,7 +195,22 @@ export function analyze(item: Item, ctx: Ctx, target: Target): Analysis {
   }
   // A blocker is only relevant if its req is still missing.
   for (let k = 0; k < modBlocks.length; k++) if (modBlocks[k] >= 0 && met.has(modBlocks[k])) modBlocks[k] = -1;
-  return { met, goal: met.size >= target.need && hasOpenSlots(item, ctx, target), modReq, modBlocks };
+  const goal = targetGroups(target).every((g) => g.idx.filter((i) => met.has(i)).length >= g.need);
+  return { met, goal: goal && hasOpenSlots(item, ctx, target), modReq, modBlocks };
+}
+
+/** Requirement groups of a target: indices of their reqs and how many of each are needed. */
+export function targetGroups(target: Target): { idx: number[]; need: number }[] {
+  const by = new Map<number, number[]>();
+  target.reqs.forEach((r, i) => {
+    const g = r.group ?? 0;
+    if (!by.has(g)) by.set(g, []);
+    by.get(g)!.push(i);
+  });
+  return [...by].map(([g, idx]) => {
+    const want = g === 0 ? target.need : (target.groupNeed?.[g] ?? idx.length);
+    return { idx, need: Math.max(0, Math.min(idx.length, want)) };
+  });
 }
 
 /** The item keeps the free slots the target asks for (only a rare item can). */
