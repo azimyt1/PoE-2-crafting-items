@@ -27,9 +27,15 @@ export function GameLink({ parser, poolIds, mode, setMode, onItem, compact }: Pr
 
   function handle(raw: string, source: string) {
     if (!parser || !raw || raw === lastRaw.current) return;
+    // a trade-site extension that could not read the listing
+    if (/Unknown (Class|Base|Rarity)/.test(raw)) {
+      setStatus('Расширение трейда не смогло прочитать объявление (пустой шаблон «Unknown»). Выделите объявление мышкой и нажмите Ctrl+C.');
+      return;
+    }
     const p = parser.parse(raw, poolIds);
     if (!p) {
-      if (source !== 'helper' && source !== 'focus') setStatus('Это не похоже на предмет из игры. Скопируйте его в игре через Ctrl+Alt+C.');
+      if (source !== 'helper' && source !== 'focus')
+        setStatus('Это не похоже на предмет. Скопируйте его в игре через Ctrl+Alt+C или объявление с сайта трейда целиком.');
       return;
     }
     lastRaw.current = raw;
@@ -113,6 +119,9 @@ export function GameLink({ parser, poolIds, mode, setMode, onItem, compact }: Pr
         {mode === 'paste' && 'Затем нажмите Ctrl+V на этой странице.'}
         {mode === 'focus' && 'Затем просто переключитесь в это окно: предмет прочитается сам (браузер один раз спросит разрешение).'}
         {mode === 'helper' && 'Приложение само видит каждый скопированный предмет, даже если оно открыто на втором мониторе.'}
+        <br />
+        Предмет с сайта трейда: скопируйте его кнопкой копирования (её добавляет расширение «PoE2 Trade Copy Button») или просто
+        выделите объявление мышкой и нажмите Ctrl+C, затем Ctrl+V здесь. Тиры в этом случае определяются по значениям модов.
       </div>
       {mode === 'paste' && !compact && (
         <textarea

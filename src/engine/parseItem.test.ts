@@ -178,3 +178,84 @@ Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to r
     expect(p.mods.map((m) => m.mod.id).sort()).toEqual(['JewelAreaofEffect', 'JewelCastSpeed']);
   });
 });
+
+describe('trade site text', () => {
+  it('reads the copy-button format of trade browser extensions', () => {
+    const text = `Rarity: Rare
+Grim Glimmer
+Sapphire
+--------
+Item Level: 79
+--------
+5% increased Area of Effect (explicit)
+3% increased Cast Speed (explicit)
+--------
+Note: ~price 5 exalted
+--------`;
+    const p = parser.parse(text)!;
+    expect(p.rarity).toBe('rare');
+    expect(p.base?.name).toBe('Sapphire');
+    expect(p.ilvl).toBe(79);
+    expect(p.mods.map((m) => m.mod.id).sort()).toEqual(['JewelAreaofEffect', 'JewelCastSpeed']);
+  });
+
+  it('reads a listing selected with the mouse', () => {
+    const text = `Doom Loop
+Gold Ring
+Item Level: 81
+Requires: Level 60
+12% increased Rarity of Items found
++75 to maximum Life
++37% to Cold Resistance (fractured)
++20% to Fire Resistance
+~price 3 divine`;
+    const p = parser.parse(text)!;
+    expect(p.rarity).toBe('rare');
+    expect(p.base?.name).toBe('Gold Ring');
+    expect(p.ilvl).toBe(81);
+    const ids = p.mods.map((m) => m.mod.id);
+    expect(ids.some((id) => id.startsWith('IncreasedLife'))).toBe(true);
+    expect(ids.some((id) => id.startsWith('ColdResist'))).toBe(true);
+    expect(ids.some((id) => id.startsWith('ItemFoundRarity'))).toBe(false); // implicit of the base
+    expect(p.mods.find((m) => m.mod.id.startsWith('ColdResist'))!.mod.fr).toBe(true);
+  });
+});
+
+describe('summed stat lines', () => {
+  it('splits a line that two modifiers add up to (real trade listing)', () => {
+    const text = `Rarity: Rare
+Honour Suit
+Sacramental Robe
+--------
+Sockets: S S
+--------
+Body Armour
+Energy Shield: 358 (augmented)
+--------
+Item Level: 82
+Requires: Level 75, 121 Int
+--------
++12 to Dexterity (rune)
+Regenerate 0.45% of maximum Life per second (rune)
+Bonded: +40 to maximum Life (rune)
+Bonded: +40 to maximum Mana (rune)
+--------
+25% increased Energy Shield Recharge Rate (implicit)
+--------
++116 to maximum Energy Shield (explicit)
+33% increased Energy Shield (explicit)
++193 to maximum Life (explicit)
++28% to Fire Resistance (explicit)
++25% to Chaos Resistance (explicit)
+--------
+Note: ~b/o 1 chaos
+--------`;
+    const p = parser.parse(text)!;
+    expect(p.base?.name).toBe('Sacramental Robe');
+    expect(p.ilvl).toBe(82);
+    const ids = p.mods.map((m) => m.mod.id).sort();
+    // +116 flat ES = flat ES tier (91-96) + flat part of the hybrid (21-25)
+    expect(ids).toEqual(['ChaosResist6', 'FireResist5', 'IncreasedLife12', 'LocalIncreasedEnergyShield11', 'LocalIncreasedEnergyShieldAndBase5']);
+    expect(p.unmatched).toEqual([]);
+  });
+});
