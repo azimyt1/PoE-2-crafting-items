@@ -178,3 +178,45 @@ Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to r
     expect(p.mods.map((m) => m.mod.id).sort()).toEqual(['JewelAreaofEffect', 'JewelCastSpeed']);
   });
 });
+
+describe('trade site text', () => {
+  it('reads the copy-button format of trade browser extensions', () => {
+    const text = `Rarity: Rare
+Grim Glimmer
+Sapphire
+--------
+Item Level: 79
+--------
+5% increased Area of Effect (explicit)
+3% increased Cast Speed (explicit)
+--------
+Note: ~price 5 exalted
+--------`;
+    const p = parser.parse(text)!;
+    expect(p.rarity).toBe('rare');
+    expect(p.base?.name).toBe('Sapphire');
+    expect(p.ilvl).toBe(79);
+    expect(p.mods.map((m) => m.mod.id).sort()).toEqual(['JewelAreaofEffect', 'JewelCastSpeed']);
+  });
+
+  it('reads a listing selected with the mouse', () => {
+    const text = `Doom Loop
+Gold Ring
+Item Level: 81
+Requires: Level 60
+12% increased Rarity of Items found
++75 to maximum Life
++37% to Cold Resistance (fractured)
++20% to Fire Resistance
+~price 3 divine`;
+    const p = parser.parse(text)!;
+    expect(p.rarity).toBe('rare');
+    expect(p.base?.name).toBe('Gold Ring');
+    expect(p.ilvl).toBe(81);
+    const ids = p.mods.map((m) => m.mod.id);
+    expect(ids.some((id) => id.startsWith('IncreasedLife'))).toBe(true);
+    expect(ids.some((id) => id.startsWith('ColdResist'))).toBe(true);
+    expect(ids.some((id) => id.startsWith('ItemFoundRarity'))).toBe(false); // implicit of the base
+    expect(p.mods.find((m) => m.mod.id.startsWith('ColdResist'))!.mod.fr).toBe(true);
+  });
+});

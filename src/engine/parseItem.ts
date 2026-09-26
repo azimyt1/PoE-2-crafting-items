@@ -53,7 +53,7 @@ const RARITY: Record<string, ParsedItem['rarity']> = {
   редкий: 'rare',
   уникальный: 'unique',
 };
-const TAIL_FLAGS = /\s*\((fractured|desecrated|crafted|implicit|rune|enchant|augmented|расколото|очернено|собственное|руна|зачарование)\)\s*$/i;
+const TAIL_FLAGS = /\s*\((fractured|desecrated|crafted|explicit|implicit|rune|enchant|augmented|расколото|очернено|собственное|руна|зачарование)\)\s*$/i;
 
 /** Numbers shown on a line, and the "(min-max)" ranges from advanced copy. */
 function numbers(line: string): { values: number[]; ranges: [number, number][] } {
@@ -176,10 +176,63 @@ export class ItemParser {
     return this.byTemplate.get(lines.map((l) => this.tpl(l)).sort().join('\n')) ?? [];
   }
 
+  /**
+   * Text without the game's "Item Class:" header: the trade site copy button
+   * (browser extensions: "Rarity: ...", name, base, then modifiers marked
+   * "(explicit)") or a listing selected with the mouse. Rebuilt into the
+   * game's simple copy format.
+   */
+  private normalizeForeign(raw: string[]): string[] | null {
+    const rar = raw.findIndex((l) => /^(Rarity|Редкость):/i.test(l));
+    if (rar >= 0) return [/^Редкость/i.test(raw[rar]) ? 'Класс предмета: ' : 'Item Class: ', ...raw.slice(rar)];
+    // Selected listing text: find the line holding the base type.
+    // Price, seller and whisper lines of the listing are not part of the item.
+    const junk = /^(~|Asking Price|Price:|Цена|Whisper|Direct Whisper|Travel to|Listed|Выставлен|Написать|IGN:|Seller)/i;
+    const lines = raw.filter((l) => l && !junk.test(l));
+    const ruNames = this.ru ? Object.keys(this.ru.bases) : [];
+    const isRu = lines.some((l) => /[а-яё]/i.test(l));
+    const names = isRu ? ruNames : [...this.basesByName.keys()];
+    const baseIdx = lines.findIndex((l) => names.includes(l));
+    let idx = baseIdx;
+    let magic = false;
+    if (idx < 0) {
+      // magic items: "Prefix Base of Suffix" in one line
+      idx = lines.findIndex((l) => names.some((n) => n.length > 3 && l.includes(n)) && !/\d/.test(l));
+      magic = idx >= 0;
+    }
+    if (idx < 0) return null;
+    const rare = !magic && idx > 0 && !/:/.test(lines[idx - 1]) && !/\d/.test(lines[idx - 1]);
+    const rarity = rare ? 'Rare' : magic ? 'Magic' : 'Normal';
+    const ilvl = lines.find((l) => /^(Item Level|Уровень предмета):/i.test(l));
+    const out = [isRu ? 'Класс предмета: ' : 'Item Class: ', `${isRu ? 'Редкость' : 'Rarity'}: ${rarity}`];
+    if (rare) out.push(lines[idx - 1]);
+    out.push(lines[idx], '--------');
+    if (ilvl) out.push(ilvl, '--------');
+    // unmarked text: the base's own implicit lines are not modifiers
+    const baseLine = lines[idx];
+    const enName = isRu && this.ru ? (this.ru.bases[baseLine] ?? baseLine) : baseLine;
+    const base = this.basesByName.get(enName)?.[0] ?? [...this.basesByName.entries()].find(([n]) => baseLine.includes(n))?.[1][0];
+    const imp = new Set((base?.imp ?? []).flatMap((x) => x.split('\n')).map(template));
+    for (const l of lines.slice(idx + 1)) {
+      if (l === ilvl) continue;
+      if (imp.has(template(l))) {
+        out.push(`${l} (implicit)`);
+        continue;
+      }
+      out.push(l);
+    }
+    return out;
+  }
+
   parse(text: string, poolIds?: Set<string>): ParsedItem | null {
-    const raw = text.replace(/\r/g, '').split('\n').map((l) => l.trim());
-    const first = raw.findIndex((l) => /^(Item Class|Класс предмета):/i.test(l));
-    if (first < 0) return null;
+    let raw = text.replace(/\r/g, '').split('\n').map((l) => l.trim());
+    let first = raw.findIndex((l) => /^(Item Class|Класс предмета):/i.test(l));
+    if (first < 0) {
+      const norm = this.normalizeForeign(raw);
+      if (!norm) return null;
+      raw = norm;
+      first = 0;
+    }
     const lines = raw.slice(first);
     const ru = /^Класс предмета:/i.test(lines[0]);
     const sections: string[][] = [[]];
