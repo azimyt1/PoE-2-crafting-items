@@ -1,6 +1,6 @@
 {
   "gameVersion": "4.5.5.2",
-  "builtAt": "2026-09-26T00:05:47.429Z",
+  "builtAt": "2026-09-26T00:24:10.364Z",
   "source": "https://github.com/repoe-fork/poe2",
   "classes": {
     "Body Armour": "Нагрудник",
@@ -30,10 +30,11 @@
     "Sceptre": "Скипетр",
     "Bow": "Лук",
     "Crossbow": "Арбалет",
-    "Talisman": "Талисман"
+    "Talisman": "Талисман",
+    "Jewel": "Самоцвет"
   },
   "counts": {
-    "bases": 1760,
-    "mods": 1627
+    "bases": 1763,
+    "mods": 1819
   }
 }

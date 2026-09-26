@@ -33,6 +33,11 @@ export const BONE_LEVELS: Record<BoneTier, { min: number; max: number }> = {
   Ancient: { min: 40, max: 999 },
 };
 
+/** Bones desecrate jewellery, weapons / quivers and armour only. */
+export function canDesecrate(base: BaseDef): boolean {
+  return !base.tags.includes('jewel');
+}
+
 export function boneKind(base: BaseDef): 'Jawbone' | 'Rib' | 'Collarbone' {
   const t = new Set(base.tags);
   if (t.has('ring') || t.has('amulet') || t.has('belt')) return 'Collarbone';

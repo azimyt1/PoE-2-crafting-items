@@ -1,7 +1,7 @@
 // Currency actions: exact outcome distributions (for the planner) and random
 // sampling (for Monte Carlo). Both share the same rules.
 
-import { BONE_LEVELS, MIN_MOD_LEVEL } from './currency';
+import { BONE_LEVELS, MIN_MOD_LEVEL, canDesecrate } from './currency';
 import { addPool, cloneItem, modOf, openSlots, type AddFilter } from './item';
 import type { Action, Ctx, Item, ItemMod, ModDef, OmenName, PoolEntry, Side } from './types';
 
@@ -133,7 +133,7 @@ export function isValid(item: Item, ctx: Ctx, a: Action): boolean {
       return item.rarity === 'magic' && essenceChoices(item, ctx, a).length > 0;
     }
     case 'desecrate': {
-      if (item.rarity !== 'rare') return false;
+      if (item.rarity !== 'rare' || !canDesecrate(ctx.base)) return false;
       if (item.mods.some((m) => m.de)) return false; // one desecrated modifier per item
       return desecrationSides(item, ctx, a).some((s) => desecrationPool(item, ctx, a, s).length > 0);
     }

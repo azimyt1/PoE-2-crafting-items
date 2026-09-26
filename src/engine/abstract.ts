@@ -13,7 +13,7 @@
 // average makes the estimate far too optimistic. The planner still considers
 // Whittling on the real item, where the levels are known.
 
-import { BONE_LEVELS, MIN_MOD_LEVEL, actionCost, hasPrice } from './currency';
+import { BONE_LEVELS, MIN_MOD_LEVEL, actionCost, canDesecrate, hasPrice } from './currency';
 import type { Classifier } from './actions';
 import type { Action, BoneTier, Ctx, OmenName, OrbTier, Side, Strategy, Target } from './types';
 
@@ -247,7 +247,7 @@ export class AbstractModel {
           out.push({ kind: 'annul', omens: ['Omen of Light'] });
         }
       }
-      if (a.desecrate) for (const b of BONES) for (const o of omenSets('Omen of Sinistral Necromancy', 'Omen of Dextral Necromancy')) out.push({ kind: 'desecrate', bone: b, omens: o });
+      if (a.desecrate && canDesecrate(this.ctx.base)) for (const b of BONES) for (const o of omenSets('Omen of Sinistral Necromancy', 'Omen of Dextral Necromancy')) out.push({ kind: 'desecrate', bone: b, omens: o });
     }
     if (a.restart && s.r !== 0) out.push({ kind: 'restart' });
     return out.filter((x) =>

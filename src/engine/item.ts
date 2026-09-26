@@ -11,7 +11,8 @@ export function spawnWeight(mod: ModDef, tags: Set<string>): number {
 
 /** "+1 Prefix Modifier allowed / -1 Suffix Modifier allowed" (Dusk Ring etc.) */
 export function rareCapacity(base: BaseDef): { p: number; s: number } {
-  const cap = { p: 3, s: 3 };
+  // rare jewels hold 2 prefixes and 2 suffixes
+  const cap = base.tags.includes('jewel') ? { p: 2, s: 2 } : { p: 3, s: 3 };
   for (const line of base.imp) {
     for (const part of line.split('\n')) {
       const m = part.match(/([+-]\d+) (Prefix|Suffix) Modifiers? allowed/i);

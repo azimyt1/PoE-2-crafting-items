@@ -220,3 +220,20 @@ describe('open slots in the target', () => {
     expect(ok).toBeGreaterThan(55);
   });
 });
+
+describe('jewels', () => {
+  it('rare jewel: 2 prefixes + 2 suffixes, no bones, planner finishes', () => {
+    const base = bases.find((b) => b.name === 'Sapphire')!;
+    expect(base.cls).toBe('Jewel');
+    const w = JSON.parse(fs.readFileSync('public/data/weights.json', 'utf8'));
+    const ctx = buildCtx({ base, ilvl: 82, mods, prices, baseCost: 1, weightOverrides: w.groups.Sapphire });
+    expect(ctx.rareCap).toEqual({ p: 2, s: 2 });
+    expect(ctx.regular.length).toBeGreaterThan(20);
+    const pick = (s: 'p' | 's') => ctx.regular.find((e) => e.mod.s === s)!.mod;
+    const target: Target = { reqs: [pick('p'), pick('s')].map((m) => ({ fam: m.f, minLevel: m.l, side: m.s, label: m.x })), need: 2 };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'full')!);
+    expect(planner.candidates({ rarity: 'rare', mods: [{ id: pick('p').id }] }).some((a) => a.kind === 'desecrate')).toBe(false);
+    const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 200, maxSteps: 6000, buyFirstBase: true });
+    expect(res.successRate).toBeGreaterThan(0.95);
+  });
+});
