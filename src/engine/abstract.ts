@@ -385,6 +385,8 @@ export class AbstractModel {
         if (tot <= 0) return [];
         return out.map((o) => ({ p: o.p / tot, s: o.s }));
       }
+      case 'flux':
+        return []; // weighed by the planner on the real item only
       case 'fracture': {
         const n = this.modCount(s);
         if (this.fractured(s) || n < 4) return [];

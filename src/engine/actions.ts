@@ -3,7 +3,7 @@
 
 import { BONE_LEVELS, MIN_MOD_LEVEL, canDesecrate } from './currency';
 import { addPool, cloneItem, modOf, openSlots, type AddFilter } from './item';
-import type { Action, Ctx, Item, ItemMod, ModDef, OmenName, PoolEntry, Side } from './types';
+import type { Action, Ctx, FluxKind, Item, ItemMod, ModDef, OmenName, PoolEntry, Side } from './types';
 
 export type Rng = () => number;
 
@@ -99,6 +99,52 @@ function desecrationPool(item: Item, ctx: Ctx, a: Action, side: Side): PoolEntry
   return addPool(item, ctx, { side, desecration: true, minLevel: lv.min, maxLevel: Math.min(lv.max, ctx.ilvl) });
 }
 
+// ------------------------------------------------------------ fluxes
+
+const RES = /^(Fire|Cold|Lightning|Chaos)Resist(\d+)$/;
+const FLUX_TO: Record<FluxKind, { to: string; from: string[] }> = {
+  Blazing: { to: 'Fire', from: ['Cold', 'Lightning'] },
+  Chilling: { to: 'Cold', from: ['Fire', 'Lightning'] },
+  Crackling: { to: 'Lightning', from: ['Fire', 'Cold'] },
+  Void: { to: 'Chaos', from: ['Fire', 'Cold', 'Lightning'] },
+};
+
+/**
+ * Modifier a flux turns `id` into, or null. Elemental tiers match one to one
+ * (same values). Chaos resistance has fewer tiers: assumption, the best tier
+ * maps to the best tier and so on down.
+ */
+export function fluxTarget(ctx: Ctx, id: string, flux: FluxKind): string | null {
+  const m = id.match(RES);
+  const rule = FLUX_TO[flux];
+  if (!m || !rule.from.includes(m[1])) return null;
+  const tiers = (el: string) => {
+    const out: string[] = [];
+    for (let n = 1; ctx.byId.has(`${el}Resist${n}`); n++) out.push(`${el}Resist${n}`);
+    return out;
+  };
+  const src = tiers(m[1]);
+  const dst = tiers(rule.to);
+  if (!dst.length) return null;
+  const fromTop = src.length - src.indexOf(id);
+  return dst[Math.max(0, dst.length - fromTop)];
+}
+
+function fluxed(item: Item, ctx: Ctx, flux: FluxKind): Item | null {
+  let changed = false;
+  const mods = item.mods.map((im) => {
+    const t = fluxTarget(ctx, im.id, flux);
+    if (!t) return { ...im };
+    changed = true;
+    return { ...im, id: t };
+  });
+  if (!changed) return null;
+  // assumption: not allowed when two modifiers of the same group would result
+  const groups = mods.flatMap((im) => modOf(ctx, im).g);
+  if (new Set(groups).size !== groups.length) return null;
+  return { rarity: item.rarity, mods };
+}
+
 // ------------------------------------------------------------ validity
 
 export function isValid(item: Item, ctx: Ctx, a: Action): boolean {
@@ -123,6 +169,8 @@ export function isValid(item: Item, ctx: Ctx, a: Action): boolean {
     }
     case 'fracture':
       return item.rarity === 'rare' && item.mods.length >= 4 && !item.mods.some((m) => m.fr);
+    case 'flux':
+      return item.rarity !== 'normal' && fluxed(item, ctx, a.flux ?? 'Void') !== null;
     case 'chaos':
       return item.rarity === 'rare' && removable(item, ctx, a).length > 0;
     case 'annul':
@@ -216,6 +264,10 @@ export function outcomes(
         for (const m of ch) out.push({ p: 1 / idx.length / ch.length, item: withMod(withoutIdx(item, i), m, 'rare') });
       }
       return out;
+    }
+    case 'flux': {
+      const it = fluxed(item, ctx, a.flux ?? 'Void');
+      return it ? [{ p: 1, item: it }] : [];
     }
     case 'fracture':
       return item.mods.map((_, i) => ({
@@ -338,6 +390,8 @@ export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: M
       it.mods.push({ id: ch[Math.floor(rng() * ch.length)].id });
       return it;
     }
+    case 'flux':
+      return fluxed(item, ctx, a.flux ?? 'Void') ?? it;
     case 'fracture': {
       if (!it.mods.length) return it;
       it.mods[Math.floor(rng() * it.mods.length)].fr = true;

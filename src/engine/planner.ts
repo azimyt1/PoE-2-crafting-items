@@ -12,7 +12,7 @@ import { essencesForBase, type EssenceOption } from './essences';
 import { outcomes, isValid, type Classifier, type Outcome } from './actions';
 import { AbstractModel, type AbsEssence, type AbsState, type Fixed } from './abstract';
 import { analyze, modMatchesReq, modOf } from './item';
-import type { Action, BoneTier, Ctx, Item, ModDef, OmenName, OrbTier, Strategy, Target } from './types';
+import type { Action, BoneTier, Ctx, FluxKind, Item, ModDef, OmenName, OrbTier, Strategy, Target } from './types';
 
 export interface Scored {
   action: Action;
@@ -233,6 +233,10 @@ export class Planner {
         for (const b of BONES)
           for (const o of omenSets('Omen of Sinistral Necromancy', 'Omen of Dextral Necromancy')) out.push({ kind: 'desecrate', bone: b, omens: o });
     }
+    // Fluxes are only weighed on the real item (the abstract model does not know
+    // which unwanted modifiers are resistances), so they are used when they help.
+    if (a.flux && item.rarity !== 'normal')
+      for (const f of ['Blazing', 'Chilling', 'Crackling', 'Void'] as FluxKind[]) out.push({ kind: 'flux', flux: f });
     if (a.restart && item.rarity !== 'normal') out.push({ kind: 'restart' });
     return out.filter((x) => hasPrice(x, this.ctx.base, this.ctx.prices) && isValid(item, this.ctx, x));
   }

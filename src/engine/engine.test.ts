@@ -237,3 +237,25 @@ describe('jewels', () => {
     expect(res.successRate).toBeGreaterThan(0.95);
   });
 });
+
+describe('fluxes', () => {
+  it('Void Flux turns elemental resistances into chaos resistance', () => {
+    const ctx = ctxFor('Gold Ring');
+    const item = { rarity: 'rare' as const, mods: [{ id: 'IncreasedLife8' }, { id: 'ColdResist8' }] };
+    const outs = outcomes(item, ctx, { kind: 'flux', flux: 'Void' });
+    expect(outs).toHaveLength(1);
+    expect(outs[0].item.mods.map((m) => m.id)).toEqual(['IncreasedLife8', 'ChaosResist6']);
+    // Blazing: cold -> fire of the same tier
+    expect(outcomes(item, ctx, { kind: 'flux', flux: 'Blazing' })[0].item.mods[1].id).toBe('FireResist8');
+    // two resistances would both become fire: not allowed
+    const two = { rarity: 'rare' as const, mods: [{ id: 'ColdResist3' }, { id: 'LightningResist5' }] };
+    expect(isValid(two, ctx, { kind: 'flux', flux: 'Blazing' })).toBe(false);
+  });
+  it('planner uses a flux when it completes the item', () => {
+    const ctx = ctxFor('Gold Ring');
+    const target: Target = { reqs: [req('IncreasedLife6'), req('ChaosResist4')], need: 2 };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'full')!);
+    const d = planner.decide({ rarity: 'rare', mods: [{ id: 'IncreasedLife8' }, { id: 'LightningResist8' }] });
+    expect(d.action).toEqual({ kind: 'flux', flux: 'Void' });
+  });
+});

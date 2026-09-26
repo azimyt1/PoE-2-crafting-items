@@ -128,6 +128,7 @@ export type ActionKind =
   | 'essence'
   | 'desecrate'
   | 'fracture'
+  | 'flux'
   | 'restart';
 
 /** 0 = normal orb, 1 = Greater, 2 = Perfect */
@@ -158,12 +159,16 @@ export interface EssenceUse {
 
 export type BoneTier = 'Gnawed' | 'Preserved' | 'Ancient';
 
+/** Fluxes turn resistance modifiers into another resistance */
+export type FluxKind = 'Blazing' | 'Chilling' | 'Crackling' | 'Void';
+
 export interface Action {
   kind: ActionKind;
   tier?: OrbTier;
   omens?: OmenName[];
   essence?: EssenceUse;
   bone?: BoneTier;
+  flux?: FluxKind;
 }
 
 export interface Strategy {
@@ -182,6 +187,8 @@ export interface Strategy {
     desecrate: boolean;
     /** Fracturing Orb: lock a random modifier on a rare item with 4+ modifiers */
     fracture: boolean;
+    /** Blazing / Chilling / Crackling / Void Flux: convert resistance modifiers */
+    flux?: boolean;
     omens: boolean;
     /** allow Greater / Perfect orbs */
     higherTiers: boolean;
