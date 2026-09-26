@@ -27,6 +27,11 @@ export function GameLink({ parser, poolIds, mode, setMode, onItem, compact }: Pr
 
   function handle(raw: string, source: string) {
     if (!parser || !raw || raw === lastRaw.current) return;
+    // a trade-site extension that could not read the listing
+    if (/Unknown (Class|Base|Rarity)/.test(raw)) {
+      setStatus('Расширение трейда не смогло прочитать объявление (пустой шаблон «Unknown»). Выделите объявление мышкой и нажмите Ctrl+C.');
+      return;
+    }
     const p = parser.parse(raw, poolIds);
     if (!p) {
       if (source !== 'helper' && source !== 'focus')
