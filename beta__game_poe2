@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+    <title>Craft of Exile</title>
+    <meta name="title" property="og:title" content="Craft of Exile" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="https://beta.craftofexile.com/" />
+    <meta name="keywords" content="path of exile,craft,exile,craft of exile,crafting,simulator,calculator,probability,probabilities,fossil,essence,currency" />
+    <meta name="description" property="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <meta name="og:title" content="Craft of Exile" />
+    <meta name="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script type="text/javascript" src="ext/jquery.min.js?v=1772417848"></script><script type="text/javascript" src="ext/pretty-print-json.min.js?v=1772417848"></script><script type="text/javascript" src="packages/files/package_poe2.js?v=1790355360"></script><link rel="stylesheet" type="text/css" href="packages/files/package.css?v=1790030118"/><link rel="stylesheet" type="text/css" href="ext/pretty-print-json.css?v=1772417848"/><link rel="stylesheet" type="text/css" href="css/media.css?v=1784744880"/><link rel="stylesheet" type="text/css" href="css/poe2.css?v=1789656882"/><link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet"><script type="text/javascript" src="json/settings.json?v=1789656882"></script><script type="text/javascript" src="json/poe2/4.5.5.3/localization/english.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/data.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/prices.json?v=1790355360"></script>    <!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-LP84H6PC5N"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-LP84H6PC5N');</script>    <script>window["nitroAds"] = window["nitroAds"] || {createAd: function() {window.nitroAds.queue.push(["createAd", arguments]);},queue: []};</script><script async src="https://s.nitropay.com/ads-556.js"></script></head>
+
+<body class='game_poe2 basePicking'>
+    <div id='coeConstants' class='hidden'>{"path":"","baseurl":"https:\/\/beta.craftofexile.com\/","fullurl":"https:\/\/beta.craftofexile.com\/","debug":false,"get":{"game":"poe2"},"online":true,"nitro":true,"game":"poe2","patch":"4.5.5.3","core":{"defaultLanguage":"English","languages":["English","French","German","Japanese","Korean","Portuguese","Russian","Spanish","Thai","Traditional Chinese"],"currentPatch":"4.5.5.3","patches":[{"number":"4.5.5.3","label":"0.5.5.3","league":"Forbidden Rites"},{"number":"4.5.5.1.5","label":"0.5.5.1.5","league":"Forbidden Rites"},{"number":"4.5.4.1.2","label":"0.5.4.1.2","league":"Return of the Ancients"},{"number":"4.5.3.1.7","label":"0.5.3.1.7","league":"Return of the Ancients"},{"number":"4.5.2.1.2","label":"0.5.2.1.2","league":"Return of the Ancients"},{"number":"4.5.1.1.3","label":"0.5.1.1.3","league":"Return of the Ancients"},{"number":"4.4.0.4.3","label":"0.4.0.4.3","league":"Fate of the Vaal"}]},"workers":{"calculatorProcessor":"packages\/files\/package_worker_calculator_processor_poe2.js?v=1790355360","simulatorProcessor":"packages\/files\/package_worker_simulator_processor_poe2.js?v=1790355360","fossilOptimizerProcessor":"packages\/files\/package_worker_fossil_optimizer_processor.js?v=1790355360"},"patron":false,"connected":false}</div>
+
+    <div id="snackbarsLeft" class="snackbars flex gap-big flex-columns"></div>
+    <div id="snackbarsRight" class="snackbars flex gap-big flex-columns align-end"></div>
+
+    <header class="top flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center">
+            <nav id="linksMenu" class="topMenu flex flex-grow gap">
+                <a href="https://www.arpg.info" target="_blank">arpg.info</a>
+                <a href="https://www.craftofexile.com" target="_blank">craftofexile.com</a>
+            </nav>
+            <nav id="topMenu" class="topMenu flex flex-grow justify-end align-center gap">
+                <a href="whats-new" class="whats-new">*NEW*</a>
+                <a href="roadmap" class="roadmap">Roadmap</a>
+                <a href="changelog" class="changelog">Changelog</a>
+                <a href="compare" class="compare">Compare</a>
+                <a href="about" class="about">About</a>
+                <a href="https://discord.gg/bGscbKSygD" target="_blank" title="Craft of Exile Discord"><img src="assets/discord_sml.png" class="discord" /></a>
+                <a href="patreon-auth" class="patreon-auth" title="Connect with Patreon"><img src="assets/patreon-square.png" class="patreon" /></a>
+                <!--<a href="poe-auth" class="poe-auth" title="Login with Path of Exile"><img src="assets/login-icon.png" class="login" /></a>-->
+            </nav>
+        </div>
+    </header>
+
+    <header class="main flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center justify-end">
+            <a id="siteTitle" href="?game=poe2"><img src="assets/full-logo.png" /></a>
+            <nav id="mainMenu" class="flex flex-grow">
+                <a href="" class="tool">Crafting</a>
+                <a href="data" class="data">Data</a>
+            </nav>
+                            <div><button class="game" onClick="inventory.viewInventory()">Inventory</button></div>
+                        <div id="gameToggler" class="flex nowrap">
+                <a href="?game=poe1" class="poe1">POE 1</a>
+                <a href="?game=poe2" class="poe2">POE 2</a>
+            </div>
+            <div id="settingsZone"></div>
+            <div id="languageToggler">
+                <div class="current"><img src='assets/shared/ui/lflg_us.png' /></div>
+                <div class="options">
+                    <div class="wrapper med-shadow">
+                        <h1>Languages</h1>
+                        <div class="list">
+                                                            <div key="us" class="active" onClick="UIManager.changeLanguage('us')"><img src='assets/shared/ui/lflg_us.png' />English</div>
+                                                            <div key="de" class="" onClick="UIManager.changeLanguage('de')"><img src='assets/shared/ui/lflg_de.png' />Deutsch</div>
+                                                            <div key="sp" class="" onClick="UIManager.changeLanguage('sp')"><img src='assets/shared/ui/lflg_sp.png' />Español</div>
+                                                            <div key="fr" class="" onClick="UIManager.changeLanguage('fr')"><img src='assets/shared/ui/lflg_fr.png' />Français</div>
+                                                            <div key="jp" class="" onClick="UIManager.changeLanguage('jp')"><img src='assets/shared/ui/lflg_jp.png' />Japanese</div>
+                                                            <div key="pt" class="" onClick="UIManager.changeLanguage('pt')"><img src='assets/shared/ui/lflg_pt.png' />Português</div>
+                                                            <div key="ru" class="" onClick="UIManager.changeLanguage('ru')"><img src='assets/shared/ui/lflg_ru.png' />Русский</div>
+                                                            <div key="th" class="" onClick="UIManager.changeLanguage('th')"><img src='assets/shared/ui/lflg_th.png' />ภาษาไทย</div>
+                                                            <div key="cn" class="" onClick="UIManager.changeLanguage('cn')"><img src='assets/shared/ui/lflg_cn.png' />简体中文</div>
+                                                            <div key="kr" class="" onClick="UIManager.changeLanguage('kr')"><img src='assets/shared/ui/lflg_kr.png' />한국어</div>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex justify-center gap-big">
+        <div class="sidebars flex">
+            <div id="coe2_left_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+        <div id="content" class="flex flex-wrap gap-big align-center">
+            <div id="ui" class="full-width flex gap-big ">
+                <div class="uiLayout flex flex-wrap gap-big flex-columns flex-take"></div>
+                <div class="uiAdBanner flex flex-top-banner">
+                    <div id="coe2_top_banner_ad" sizes='[["320", "100"],["320", "50"]]' class="adspace flex align-center justify-center top-banner">Ad space</div>
+                </div>
+            </div>
+            <div id="output" class="full-width"></div>
+            <div id="homeContent" class="flex full-width flex-columns gap-big">
+    <div id="homeFeatures" class="flex flex-columns gap">
+        <h1>Key Features</h1>
+        <div class="features grid">
+            <div class="feature">
+                <div class="header">Emulator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_emulator.jpg')">
+                    <img src="assets/shared/images/feature_emulator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Emulate directly in
+                            the
+                            crafting
+                            interface
+                        </div>
+                        <div class='details'>Apply the selected crafting method by hovering over the item and clicking
+                            on
+                            it.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Calculator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_calculator.jpg')">
+                    <img src="assets/shared/images/feature_calculator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Build complex
+                            calculator requirements
+                        </div>
+                        <div class='details'>Set up requirement groups with partial or complete matching, query for open
+                            affixes and more.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Simulator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_simulator.jpg')">
+                    <img src="assets/shared/images/feature_simulator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Simulate entire
+                            crafting
+                            processes for a
+                            project</div>
+                        <div class='details'>Create crafting steps and use routing and conditions to simulate a crafting
+                            strategy.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Inventory</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_inventory.jpg')">
+                    <img src="assets/shared/images/feature_inventory.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Save items to
+                            inventory
+                        </div>
+                        <div class='details'>Store items for future reference, create and manage storage tabs and more.
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Customizability</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_customize.jpg')">
+                    <img src="assets/shared/images/feature_customize.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Expansive user
+                            settings
+                        </div>
+                        <div class='details'>Tailor the UI to your liking, set up custom pricing and toggle user
+                            options.
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">And much more...</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_data.jpg')">
+                    <img src="assets/shared/images/feature_data.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Expanded data
+                            viewability
+                        </div>
+                        <div class='details'>Browse compiled data, compare patches, view items and modifier details and
+                            more.
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <h1>Usage</h1>
+    </div>
+    <div class="flex justify-center full-width">
+        <div id="instructions" class="flex flex-columns med-shadow">
+            <h2>Instructions</h2>
+            <div class="flex flex-columns gap">
+                <div class="flex gap-sml align-center">
+                    <div class="keyboardKey">Hover</div> over an item and <img
+                        src="assets/shared/ui/control-left-mouse.webp" /> to <span
+                        class='color unique bold'>apply</span>
+                    the currently selected crafting method to it.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hold <img src="assets/shared/ui/control-alt.webp" /> to toggle between <span
+                        class='color unique bold'>advanced</span> and <span class='color unique bold'>classic</span>
+                    modifier
+                    descriptions for items.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hold <img src="assets/shared/ui/control-shift.webp" /> to force <span
+                        class='color unique bold'>tooltips</span> to stay visible and enable
+                    the ability
+                    to
+                    drill-down.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hit <img src="assets/shared/ui/control-ctrl.webp" /> +
+                    <div class="keyboardKey">Z</div> to
+                    <span class='color unique bold'>revert</span> emulator actions.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Left <img src="assets/shared/ui/control-left-mouse.webp" /> to <span
+                        class='color unique bold'>add</span> or <span class='color unique bold'>remove</span> modifiers
+                    from
+                    the modpool
+                    to
+                    the current item.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Right <img src="assets/shared/ui/control-right-mouse.webp" /> to access the context menu <span
+                        class='color unique bold'>options</span> for
+                    elements.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>            <div class="flex justify-center full-width">
+                <div id="coe2_footer_ad" sizes='[["970", "250"],["970", "90"],["728", "90"],["300", "250"],["320", "50"],["320", "100"]]' class="adspace flex align-center justify-center">Ad space</div>
+            </div>
+        </div>
+        <div class="sidebars flex">
+            <div id="coe2_right_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+    </main>
+
+    <footer class="text-center flex flex-columns gap">
+        <nav id="bottomMenu" class="topMenu flex flex-grow justify-center gap">
+            <a href="privacy" class="privacy">Privacy</a>
+            <a href="developers" class="developpers">Developers</a>
+        </nav>
+        <div class="disclaimer">craftofexile.com is not affiliated with or endorsed by Grinding Gear Games</div>
+    </footer>
+
+    <template id="settingsTemplate">
+        <div class="settings">
+            <div class="holder">
+                <div class="wrapper med-shadow">
+
+                </div>
+            </div>
+            <div class="contentTemplate hidden">
+                <h1></h1>
+                <div class="content grid gap"></div>
+            </div>
+            <svg viewBox="0 0 512 512" onClick="document.location='settings'">
+                <use href="assets/shared/ui/settings.svg#settings"></use>
+            </svg>
+        </div>
+    </template>
+
+    <template id="noticeTemplate">
+        <div class="notice flex flex-columns">
+            <div class="header flex gap align-center"><label class="flex-grow"></label><button class="closer small" onClick="Notices.close(this)">Close</button></div>
+            <div class="message flex gap align-center">
+                <div class="icon"></div>
+                <div class="text"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="snackbarTemplate">
+        <div class="snackbar med-shadow flex flex-columns text-center">
+            <label></label>
+            <div class="message"></div>
+        </div>
+    </template>
+
+    <template id="selectorTemplate">
+        <div class="selector">
+            <label class="flex gap align-center">
+                <div class="toggler noselect">
+                    <div delta="1">Show</div>
+                    <div delta="0">Hide</div>
+                </div>
+            </label>
+            <div class="subset"></div>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="dropdownTemplate">
+        <div class="dropdown inline-block">
+            <label class="flex gap align-center">
+                <div class="output flex align-center gap-sml flex-grow">
+                    <div class="current flex-grow flex align-center gap"></div>
+                    <div class="placeholder flex-grow"></div>
+                    <div class="image noselect">
+                        <img src="assets/shared/ui/expand_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/expand_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/expand_active.webp" class="active" />
+                    </div>
+                </div>
+                <div class="editing flex align-center gap flex-grow">
+                    <div class="flex-grow"><input type="text" /></div>
+                    <div class="image closer noselect">
+                        <img src="assets/shared/ui/close_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/close_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/close_active.webp" class="active" />
+                    </div>
+                </div>
+            </label>
+            <ul class="med-shadow"></ul>
+        </div>
+    </template>
+
+    <template id="togglerTemplate">
+        <div class="toggler">
+            <label></label>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="itemTemplate">
+        <div class="item">
+            <div class="flex flex-columns">
+                <div class="header flex">
+                    <div class="side left flex align-center"></div>
+                    <div class="center flex-grow">
+                        <div class="name"></div>
+                        <div class="label"></div>
+                    </div>
+                    <div class="side right flex align-center justify-end"></div>
+                </div>
+                <div class="output flex gap align-center justify-center">
+                    <div class="image"></div>
+                    <div class="text"></div>
+                    <div class="destroyed">
+                        <div class="message">Item has been destroyed</div>
+                        <div class="flex editButtonZone gap align-center justify-center"><button class="small button restore">Restore</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="inputTemplate">
+        <div class="input">
+            <div>
+                <input type="text" class="med-shadow" />
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="textAreaTemplate">
+        <div class="textarea">
+            <div>
+                <textarea class="med-shadow"></textarea>
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="itemDetailsTemplate">
+        <div class="itemDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Class details</h2>
+                </div>
+                <div class="classData"></div>
+            </div>
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Item details</h2>
+                </div>
+                <div class="itemData"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="settingsImporterTemplate">
+        <div id="settingsImporterZone" class="content importerZone">
+            <div class="importer flex flex-columns gap">
+                <textarea id="settingsImporterInput" placeholder="Paste your data here"></textarea>
+                <button onClick="user.importSettingsCommit()">Proceed</button>
+            </div>
+            <div class="errors flex flex-columns gap hidden">
+                <h2>One or more issues encountered while attempting import</h2>
+                <div class="list flex flex-columns gap"></div>
+                <button onClick="user.importSettingsReturn()">Return</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="changePatchTemplate">
+        <div id="changePatchZone" class="content flex flex-columns gap">
+        </div>
+    </template>
+
+    <template id="modifierDetailsTemplate">
+        <div class="modifierDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Group details</h2>
+                </div>
+                <div class="groupDetails"></div>
+            </div>
+            <div class="flex flex-columns modifiersZone">
+                <div>
+                    <h2>Modifier details</h2>
+                </div>
+                <div class="modifierDetails"></div>
+            </div>
+        </div>
+    </template>
+
+    <dialog id="noticeDialog" class="over-shadow"></dialog>
+
+            <template id="fullscreenTemplate">
+            <div id="content" class="flex gap align-start flex-columns">
+                <div id="ui" class="uiLayout flex flex-wrap gap-big flex-columns"></div>
+                <div id="output" class="full-width"></div>
+                <div id="homeContent" class="flex full-width flex-columns gap-big">
+    <div id="homeFeatures" class="flex flex-columns gap">
+        <h1>Key Features</h1>
+        <div class="features grid">
+            <div class="feature">
+                <div class="header">Emulator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_emulator.jpg')">
+                    <img src="assets/shared/images/feature_emulator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Emulate directly in
+                            the
+                            crafting
+                            interface
+                        </div>
+                        <div class='details'>Apply the selected crafting method by hovering over the item and clicking
+                            on
+                            it.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Calculator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_calculator.jpg')">
+                    <img src="assets/shared/images/feature_calculator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Build complex
+                            calculator requirements
+                        </div>
+                        <div class='details'>Set up requirement groups with partial or complete matching, query for open
+                            affixes and more.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Simulator</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_simulator.jpg')">
+                    <img src="assets/shared/images/feature_simulator.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Simulate entire
+                            crafting
+                            processes for a
+                            project</div>
+                        <div class='details'>Create crafting steps and use routing and conditions to simulate a crafting
+                            strategy.</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Inventory</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_inventory.jpg')">
+                    <img src="assets/shared/images/feature_inventory.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Save items to
+                            inventory
+                        </div>
+                        <div class='details'>Store items for future reference, create and manage storage tabs and more.
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">Customizability</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_customize.jpg')">
+                    <img src="assets/shared/images/feature_customize.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Expansive user
+                            settings
+                        </div>
+                        <div class='details'>Tailor the UI to your liking, set up custom pricing and toggle user
+                            options.
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature">
+                <div class="header">And much more...</div>
+                <div class="content" style="background-image:url('assets/shared/images/feature_data.jpg')">
+                    <img src="assets/shared/images/feature_data.gif" class="animation" />
+                    <label>
+                        <div class='title'><img src='assets/shared/ui/right_chevron_hover.webp' />Expanded data
+                            viewability
+                        </div>
+                        <div class='details'>Browse compiled data, compare patches, view items and modifier details and
+                            more.
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <h1>Usage</h1>
+    </div>
+    <div class="flex justify-center full-width">
+        <div id="instructions" class="flex flex-columns med-shadow">
+            <h2>Instructions</h2>
+            <div class="flex flex-columns gap">
+                <div class="flex gap-sml align-center">
+                    <div class="keyboardKey">Hover</div> over an item and <img
+                        src="assets/shared/ui/control-left-mouse.webp" /> to <span
+                        class='color unique bold'>apply</span>
+                    the currently selected crafting method to it.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hold <img src="assets/shared/ui/control-alt.webp" /> to toggle between <span
+                        class='color unique bold'>advanced</span> and <span class='color unique bold'>classic</span>
+                    modifier
+                    descriptions for items.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hold <img src="assets/shared/ui/control-shift.webp" /> to force <span
+                        class='color unique bold'>tooltips</span> to stay visible and enable
+                    the ability
+                    to
+                    drill-down.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Hit <img src="assets/shared/ui/control-ctrl.webp" /> +
+                    <div class="keyboardKey">Z</div> to
+                    <span class='color unique bold'>revert</span> emulator actions.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Left <img src="assets/shared/ui/control-left-mouse.webp" /> to <span
+                        class='color unique bold'>add</span> or <span class='color unique bold'>remove</span> modifiers
+                    from
+                    the modpool
+                    to
+                    the current item.
+                </div>
+                <div class="flex gap-sml align-center">
+                    Right <img src="assets/shared/ui/control-right-mouse.webp" /> to access the context menu <span
+                        class='color unique bold'>options</span> for
+                    elements.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>            </div>
+        </template>
+
+        <template id="uiActionsTemplate">
+            <div class="actions flex gap align-center">
+                <div id="searchItemHolder" class="splashButton"></div>
+                <button class="game" onClick="Calculator.import()">Import an item</button>
+                <button class="game builtButton" onClick="Calculator.reset()">Reset</button>
+                <button class="game" onClick="Simulator.toggle()">Simulator</button>
+            </div>
+        </template>
+
+        <template id="calculatorTemplate">
+            <div class="calculator flex flex-columns gap-big">
+                <div class="params"></div>
+                <div class="flex gap-big">
+                    <div class="flex flex-columns flex-grow gap-big">
+                        <div id="pinnedMethods"></div>
+                        <div id="calculatorMethods" class="methods"></div>
+                        <div id="advancedMethod"></div>
+                        <div id="omenSelectorZone" class="omens"></div>
+                        <div id="calculatorZone" class="flex gap-big">
+                            <div class="requirements flex-grow"></div>
+                            <div class="calculations"></div>
+                        </div>
+                        <div id="craftingInlinePanelZone"></div>
+                        <div class="filters"></div>
+                        <div class="toggles"></div>
+                        <div class="render"></div>
+                    </div>
+                    <div id="craftingSidePanelZone" class="panel">
+                        <div id="stickySidePanel" class="flex flex-columns gap">
+                            <div class="itemOutput"></div>
+                            <div class="spendingOverviewOutput hidden flex gap">
+                                <div class="output flex-grow"></div>
+                                <button class="small" onClick="Emulator.viewDetailedSpending()">View details</button>
+                            </div>
+                            <div class="changesOutput"></div>
+                            <div class="historyOverviewOutput hidden flex gap">
+                                <button class="small" onClick="Emulator.revert()">Undo</button>
+                                <div class="output flex-grow"></div>
+                                <button class="small" onClick="Emulator.viewDetailedHistory()">View details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="fullscreenCalculatorTemplate">
+            <div class="calculator flex flex-columns gap-big">
+                <div id="fullHeightArea" class="flex gap full-height flex-grow">
+                    <div class="flex flex-grow full-height gap">
+                        <div class="flex flex-columns gap">
+                            <div class="flex flex-columns full-height scrollableBox">
+                                <div class="flex-auto title">Crafting methods</div>
+                                <div id="calculatorMethods" class="methods horizontal flex full-height flex-grow content"></div>
+                            </div>
+                            <div id="fullscreenOmensZone" class="flex flex-columns scrollableBox">
+                                <div class="flex-auto title">Available omens</div>
+                                <div id="omenSelectorZone" class="omens horizontal hide-title flex-grow content"></div>
+                            </div>
+                        </div>
+                        <div id="advancedMethodZone" class="flex flex-columns full-height scrollableBox">
+                            <div class="flex-auto title">Advanced</div>
+                            <div id="advancedMethod" class="advanced horizontal flex full-height flex-grow content"></div>
+                        </div>
+                        <div class="panel flex full-height flex-columns gap">
+                            <div class="flex flex-columns flex-grow gap overflow-hidden">
+                                <div class="itemOutput flex-grow"></div>
+                                <div class="changesOutput"></div>
+                            </div>
+                            <div id="coe2_fs_crafting_video_ad" sizes='[["300", "250"]]' class="adspace flex align-center justify-center">Ad space</div>
+                        </div>
+                        <div class="flex-grow full-height flex-columns gap flex fullscreenViewZone">
+                            <div id="viewSelectorZone">
+                                <div class="selector small" id="viewSelector">
+                                    <ul>
+                                        <li value="modifiers" class="selected" onClick="UIManager.fullscreenChangeView(this)">Modifiers</li>
+                                        <li value="calculatorTab" onClick="UIManager.fullscreenChangeView(this)">Calculator</li>
+                                        <li value="spending" onClick="UIManager.fullscreenChangeView(this)">Spending
+                                            <div class="spendingOverviewOutput hidden">
+                                                <div class="output"></div>
+                                            </div>
+                                        </li>
+                                        <li value="history" onClick="UIManager.fullscreenChangeView(this)">History
+                                            <div class="historyOverviewOutput hidden">
+                                                <div class="output"></div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="flex-grow flex-columns flex gap-smlx scrollableBox height-one fullscreenView modifiers">
+                                <div class="flex-auto title">Modifiers</div>
+                                <div class="params flex-auto"></div>
+                                <div class="toggles flex-auto"></div>
+                                <div class="render flex-grow content"></div>
+                            </div>
+                            <div class="flex-grow flex-columns flex gap-smlx scrollableBox height-one fullscreenView calculatorTab hidden">
+                                <div class="flex-auto title">Calculator</div>
+                                <div class="calculations flex-auto"></div>
+                                <div class="requirements flex-grow content"></div>
+                            </div>
+                            <div class="flex-grow flex-columns flex gap-smlx scrollableBox height-one fullscreenView spending hidden">
+                                <div class="flex-auto title">Spending</div>
+                                <div class="flex-grow content" id="fullscreenViewSpending"></div>
+                            </div>
+                            <div class="flex-grow flex-columns flex gap-smlx scrollableBox height-one fullscreenView history hidden">
+                                <div class="flex-auto title">Actions history</div>
+                                <div class="flex-grow content" id="fullscreenViewHistory"></div>
+                            </div>
+                        </div>
+                        <div id="fullscreenFilterZone" class="flex flex-columns scrollableBox">
+                            <div class="flex-auto title">Tags filter</div>
+                            <div class="filters flex-grow content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="calculatorConsolidation">
+            <div class="consolidation flex flex-columns">
+                <label>Selected item base</label>
+                <div class="inline-flex gap" onClick="Calculator.showBasePicker()">
+                    <div class="category"></div>
+                    <div class="class"></div>
+                    <div class="base"></div>
+                    <div class="button">Change</div>
+                </div>
+            </div>
+        </template>
+
+        <template id="groupContextMenuTemplate">
+            <div class="content">
+                <div onClick="Calculator.showGroupDetails()">View group details</div>
+            </div>
+        </template>
+
+        <template id="modContextMenuTemplate">
+            <div class="content">
+                <div onClick="Calculator.showModDetails()">View modifier details</div>
+            </div>
+        </template>
+
+        <template id="editItemTemplate">
+            <div class="details flex flex-columns gap">
+                <button class="quality" action="changeQuality">Change quality</button>
+                <button class="intangibility" action="changeIntangibility">Change intangibility</button>
+                <button class="properties" action="changeProperties">Change properties</button>
+                <button class="rarity rare" action="changeRarityToRare">Change rarity to rare</button>
+                <button class="rarity magic" action="changeRarityToMagic">Change rarity to magic</button>
+                <button class="rarity normal" action="changeRarityToNormal">Change rarity to normal</button>
+                <button class="itemlevel" action="changeItemLevel">Change item level</button>
+                <button class="sockets" action="changeSockets">Change sockets</button>
+                <button class="corrupting corrupt" action="corrupt">Corrupt</button>
+                <button class="corrupting uncorrupt" action="uncorrupt">Uncorrupt</button>
+                <button class="sanctifying sanctify not_poe2" action="sanctify">Sanctify</button>
+                <button class="sanctifying unsanctify not_poe2" action="unsanctify">Unsanctify</button>
+                <button class="mirroring mirror" action="mirror">Mirror</button>
+                <button class="mirroring unmirror" action="unmirror">Unmirror</button>
+                <button class="splitting split not_poe2" action="split">Split</button>
+                <button class="splitting unsplit not_poe2" action="unsplit">Unsplit</button>
+                <button class="autosaving autosaveOn" action="autosaveOn">Turn on auto-save</button>
+                <button class="autosaving autosaveOff" action="autosaveOff">Turn off auto-save</button>
+            </div>
+        </template>
+
+        <template id="modifierActionsTemplate">
+            <div class="details flex flex-columns gap">
+                <button class="remove" action="removeModifier">Remove modifier</button>
+                <button class="modify implicit" action="modifyValues">Modify values</button>
+                <button class="fracture fracturing" action="fractureModifier">Fracture modifier</button>
+                <button class="unfracture fracturing" action="unfractureModifier">Unfracture modifier</button>
+                <button class="crafted craftedmod" action="craftedModifier">Crafted modifier</button>
+                <button class="uncrafted craftedmod" action="uncraftedModifier">Not-crafted modifier</button>
+                <button class="desecrate desecrating" action="desecrateModifier">Desecrate modifier</button>
+                <button class="undesecrate desecrating" action="undesecrateModifier">Undesecrate modifier</button>
+                <button class="reveal" action="revealModifier">Reveal modifier</button>
+                <button class="view implicit" action="viewModifierDetails">View modifier details</button>
+            </div>
+        </template>
+
+        <template id="inventoryTemplate">
+            <div id="inventoryZone" class="inventory flex flex-columns">
+                <div class="header flex gap align-center">
+                    <label class="flex-grow notInPicker">Items Inventory - poe2</label>
+                    <label class="flex-grow pickerOnly">Pick an item</label>
+                    <button class="closer small notInPicker" onClick="inventory.purge()">Reset</button>
+                    <button class="closer small notInPicker" onClick="inventory.import()">Import</button>
+                    <button class="closer small notInPicker" onClick="inventory.export()">Export</button>
+                    <button class="closer small" onClick="Notices.close(this)">Close</button>
+                </div>
+                <div class="content flex flex-columns">
+                    <div class="tabs flex flex-wrap"></div>
+                    <div class="tabLayout"><img src="assets/shared/ui/StashPanelGrid.png" class="panelImage" /></div>
+                </div>
+                <div class="usage notInPicker">
+                    <div class="bar"></div>
+                    <div class="info flex align-center"></div>
+                </div>
+            </div>
+        </template>
+
+        <template id="inventoryTabContextMenuTemplate">
+            <div class="content">
+                <div onClick="inventory.renameTab(this)">Rename</div>
+                <div onClick="inventory.removeTab(this)">Remove</div>
+            </div>
+        </template>
+
+        <template id="inventoryItemContextMenuTemplate">
+            <div class="content">
+                <div onClick="inventory.loadItem(this)" class="onlyFound">Load</div>
+                <div onClick="inventory.moveItem(this)">Move to</div>
+                <div onClick="inventory.exportItem(this)">Export</div>
+                <div onClick="inventory.copyItem(this)" class="onlyFound">Copy</div>
+                <div onClick="inventory.deleteItem(this)">Delete</div>
+            </div>
+        </template>
+
+        <template id="importTemplate">
+            <div id="importerZone" class="content importerZone">
+                <div class="importer flex flex-columns gap">
+                    <textarea id="importerInput" placeholder="Paste your data here&#10;&#10;(Please note that an ATL-CTRL-C paste is required for copying an item from the game)"></textarea>
+                    <button class="importCommitButton">Proceed</button>
+                </div>
+                <div class="errors flex flex-columns gap hidden">
+                    <h2>One or more issues encountered while attempting import</h2>
+                    <div class="list flex flex-columns gap"></div>
+                    <button onClick="Calculator.importReturn()">Return</button>
+                    <button class="importCommitBypassButton commitButton hidden">Proceed</button>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorImporterTemplate">
+            <div id="simulatorImporterZone" class="content importerZone">
+                <div class="importer flex flex-columns gap">
+                    <textarea id="simulatorImporterInput" placeholder="Paste your data here&#10;&#10;(You can also use a pastebin or gist URL)"></textarea>
+                    <button onClick="Simulator.importCommit()">Proceed</button>
+                </div>
+                <div class="importerLoader hidden flex align-center justify-center"></div>
+                <div class="errors flex flex-columns gap hidden">
+                    <h2>One or more issues encountered while attempting import</h2>
+                    <div class="list flex flex-columns gap"></div>
+                    <button onClick="Simulator.importReturn()">Return</button>
+                </div>
+            </div>
+        </template>
+
+        <template id="inventoryImporterTemplate">
+            <div id="inventoryImporterZone" class="content importerZone">
+                <div class="importer flex flex-columns gap">
+                    <textarea id="inventoryImporterInput" placeholder="Paste your data here&#10;&#10;(You can also use a pastebin or gist URL)"></textarea>
+                    <button onClick="inventory.importCommit()">Proceed</button>
+                </div>
+                <div class="importerLoader hidden flex align-center justify-center"></div>
+                <div class="errors flex flex-columns gap hidden">
+                    <h2>One or more issues encountered while attempting import</h2>
+                    <div class="list flex flex-columns gap"></div>
+                    <button onClick="inventory.importReturn()">Return</button>
+                </div>
+            </div>
+        </template>
+
+        <template id="spendingTemplate">
+            <div class="detailedSpendingZone">
+                <div class="spendingTable table full-width med-shadow">
+                    <div class="header">
+                        <label class="full-width vertical-middle">Item</label>
+                        <div class="text-center vertical-middle">Price</div>
+                        <div class="text-center vertical-middle">Quantity</div>
+                        <div class="text-center vertical-middle">Total</div>
+                    </div>
+                    <div class="row hidden">
+                        <label class="full-width vertical-middle"></label>
+                        <div class="price vertical-middle"></div>
+                        <div class="quantity vertical-middle"></div>
+                        <div class="total vertical-middle"></div>
+                    </div>
+                    <div class="row total">
+                        <label class="full-width vertical-middle">Total</label>
+                        <div class="text-center price vertical-middle"><span class='na'>N/A</span></div>
+                        <div class="quantity vertical-middle"></div>
+                        <div class="total vertical-middle"></div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="spendingEmptyTemplate">
+            <div class="content messageBox text-center over-shadow">Spending summary is empty</div>
+        </template>
+
+        <template id="historyTemplate">
+            <div class="detailedHistoryZone">
+                <div class="spendingTable table full-width med-shadow">
+                    <div class="header">
+                        <div class="text-center number vertical-middle">#</div>
+                        <label class="full-width vertical-middle">Action</label>
+                        <div class="vertical-middle text-center stateColumn">State</div>
+                    </div>
+                    <div class="row hidden">
+                        <div class="text-center number vertical-middle"></div>
+                        <label class="full-width vertical-middle"></label>
+                        <div class="vertical-middle text-center stateColumn">
+                            <div class="state noselect">Item</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="historyEmptyTemplate">
+            <div class="content messageBox text-center over-shadow">Actions history is empty</div>
+        </template>
+
+        <template id="awakeningTemplate">
+            <div class="content awakeningInterface flex gap">
+                <button class="game pickItem import">Import the donor item</button>
+                <button class="game pickItem change hidden">Change donor item</button>
+                <div class="donorItem hidden previewItemHolder"><img src="assets/shared/ui/preview.png" /><span class="text"></span></div>
+            </div>
+        </template>
+
+        <template id="emulatorImportTemplate">
+            <div class="details flex flex-columns gap">
+                <button class="importFromInventory">From inventory</button>
+                <button class="importFromPaste">From a paste</button>
+            </div>
+        </template>
+
+        <template id="requirementGroupTemplate">
+            <div class="requirementGroup flex flex-columns gap">
+                <div class="groupOptions flex gap align-center">
+                    <div class="groupTypeZone flex-grow"></div>
+                    <div class="flex gap-sml align-center">
+                        <label class="subtle">Matches</label>
+                        <div class="matchCountHolder">
+                            <input type="number" class="styled matchCount" placeholder="All" />
+                        </div>
+                    </div>
+                    <button class="removeButton iconed small grayscale" tooltip="Remove" tooltip-position="bottom snap-right"><img src='assets/shared/ui/remove.webp' /></button>
+                </div>
+                <div class="requirementList flex flex-columns gap-sml"></div>
+            </div>
+        </template>
+
+        <template id="requirementElementTemplate">
+            <div class="requirementElement flex gap align-center">
+                <div class="selectorZone flex-grow"></div>
+                <div class="flex gap-sml align-center">
+                    <label class="subtle tierLabel">
+                        <span class="tier">Tier</span>
+                        <span class="value">Value</span>
+                    </label>
+                    <div class="minimumTierHolder">
+                        <input type="number" class="styled minimumTier" placeholder="Any" />
+                    </div>
+                    <div class="selector booleanChoice small">
+                        <ul>
+                            <li value="1" class="state_true">Yes</li>
+                            <li value="0" class="state_false">No</li>
+                        </ul>
+                    </div>
+                    <button class="modifierState fractured iconed small grayscale" state="fractured" tooltip="Fractured" tooltip-position="bottom snap-right"><img src='assets/shared/ui/fractured.webp' /></button>
+                </div>
+                <button class="removeButton iconed small grayscale" tooltip="Remove" tooltip-position="bottom snap-right"><img src='assets/shared/ui/remove.webp' /></button>
+            </div>
+        </template>
+
+        <template id="calculationZoneTemplate">
+            <div class="calculationsOutput processorOutput grid gap-sml">
+
+            </div>
+        </template>
+
+        <template id="fullscreenSimulatorZoneTemplate">
+            <div id="simulatorSimulation" class="simulatorOutput full-width hidden flex flex-columns gap">
+                <div class="flex gap">
+                    <div id="coe2_fs_top_banner_ad" sizes='[["970", "90"],["728", "90"],["320", "100"],["320", "50"]]' class="adspace flex align-center justify-center flex-grow">Ad space</div>
+                    <div class="buttons flex gap">
+                        <button class="game" onClick="Simulator.hide()">Back to Crafting</button>
+                        <button class="game operationSimulatorButton hideWhenSimulatorDisabled" onClick="Simulator.reset()">New Simulation</button>
+                        <button class="game operationSimulatorButton hideWhenSimulatorDisabled" onClick="Simulator.load()">Load</button>
+                        <button class="game operationSimulatorButton hideWhenSimulatorDisabled" onClick="Simulator.save()">Save</button>
+                        <button class="game green runSimulationButton hideWhenSimulatorDisabled" onClick="Simulator.start()">Run simulation</button>
+                        <button class="game orange clearSimulationButton hideWhenSimulatorDisabled" onClick="Simulator.clear()">Clear simulation</button>
+                        <button class="game red stopSimulationButton hideWhenSimulatorDisabled" onClick="Simulator.stop()">Stop simulation</button>
+                    </div>
+                </div>
+                <div class="flex flex-grow full-height flex-columns gap-big">
+                    <div id="fullHeightArea" class="flex gap full-height flex-grow">
+                        <div class="flex flex-grow full-height gap">
+                            <div class="flex flex-columns justify-end gap">
+                                <div class="configuration flex flex-grow gapx flex-columns hideWhenSimulatorDisabled"></div>
+                                <div id="coe2_fs_simulator_video_ad" sizes='[["300", "250"]]' class="adspace flex align-center justify-center video">Ad space</div>
+                            </div>
+                            <div id="simulatorLayout" class="simulatorBlock layout flex flex-grow scrollableBox hideWhenSimulatorDisabled">
+                                <div class="sidebar setup">
+                                    <div class="flex flex-columns gap">
+                                        <div class="options flex flex-columns gap">
+                                            <div class="option flex flex-columns">
+                                                <label>Starting step</label>
+                                                <div class="content flex flex-columns">
+                                                    <button onClick="Simulator.selectStartingStep()" id="simulationStartingStepButton">Automatic</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button onClick="Simulator.addStep()">Add a step</button>
+                                        <div id="simulatorStepList" class="flex flex-columns gap"></div>
+                                    </div>
+                                </div>
+                                <div class="sidebar feedback">
+                                    <div class="flex flex-columns gap">
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Run count</div>
+                                            <div id="simulatorStatRunCount" class="simulatorStat"></div>
+                                        </div>
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Steps ran</div>
+                                            <div id="simulatorStatStepsRan" class="simulatorStat"></div>
+                                        </div>
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Items completed</div>
+                                            <div id="simulatorStatItemsCompleted" class="simulatorStat"></div>
+                                        </div>
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Success chance</div>
+                                            <div id="simulatorStatSuccessChance" class="simulatorStat"></div>
+                                        </div>
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Target</div>
+                                            <div id="simulatorStatTarget" class="simulatorStat"></div>
+                                        </div>
+                                        <div class="flex align-center gap-sml">
+                                            <div class="label flex-grow">Time elapsed</div>
+                                            <div id="simulatorStatTimeElapsed" class="simulatorStat"></div>
+                                        </div>
+                                        <div id="simulatorProcessorOuput" class="processorOutput flex flex-columns gap-mini"></div>
+                                        <button class="small simulatorWhenStoppedButton toggleCanvasZone" onClick="Simulator.toggleCanvasZone()">Back to flow</button>
+                                        <button class="small simulatorWhenStoppedButton toggleResultsZone hidden" onClick="Simulator.toggleResultsZone()">Go to results</button>
+                                    </div>
+                                </div>
+                                <div id="simulatorCanvasZone" class="canvas flex-grow flex flex-columns">
+                                    <div class="simulatorTitle flex-auto">Simulator flow</div>
+                                    <div id="simulatorCanvas" class="flex-grow content scrollable-y full-height"></div>
+                                </div>
+                                <div id="simulatorSimulationResultsZone" class="flex-grow flex flex-columns hidden">
+                                    <div class="simulatorTitle flex-auto">Results per step</div>
+                                    <div id="simulatorSimulationResults" class="flex-grow content scrollable-y full-height "></div>
+                                </div>
+                            </div>
+                            <div id="simulatorStepEditor" class="simulatorBlock hidden flex flex-grow flex-columns scrollableBox hideWhenSimulatorDisabled">
+                                <div class="simulatorTitle flex-auto">Step edition</div>
+                                <div class="flex flex-columns full-height flex-grow content scrollable-y gap">
+                                    <div class="header flex align-center gap">
+                                        <button onClick="Simulator.removeStep()">Remove</button>
+                                        <button onClick="Simulator.copyStep()">Copy</button>
+                                        <div class="titleHolder flex-grow"></div>
+                                        <button onClick="Simulator.saveStep()"><img src='assets/shared/ui/on_success.webp'>Apply changes</button>
+                                        <button onClick="Simulator.backToLayout()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                                    </div>
+                                    <div class="options flex flex-end gap"></div>
+                                    <div id="simulatorStepActionChooser" class="action flex flex-columns gap"></div>
+                                    <div class="links">
+                                        <label class="flex">Route priority order</label>
+                                        <div class="routeOrder flex flex-columns gap-sml"></div>
+                                    </div>
+                                    <div class="extendedOptions"></div>
+                                </div>
+                            </div>
+                            <div id="simulatorConditionEditor" class="simulatorBlock flex-grow hidden flex-columns scrollableBox hideWhenSimulatorDisabled">
+                                <div class="simulatorTitle flex-auto">Link edition</div>
+                                <div class="flex flex-columns full-height flex-grow content scrollable-y gap">
+                                    <div class="header flex align-center gap">
+                                        <button onClick="Simulator.removeLink()" class="removeLinkButton">Remove link</button>
+                                        <button onClick="Simulator.changeTarget()" class="changeTargetButton">Change target</button>
+                                        <div class="titleHolder flex-grow flex align-center gap">
+                                            <svg viewBox="0 0 16 16" class="link">
+                                                <use href="assets/shared/ui/route-link.svg#link"></use>
+                                            </svg>
+                                            <div id="simulatorConditionFrom"></div>
+                                            <img src="assets/shared/ui/arrow-separator.webp" />
+                                            <div id="simulatorConditionTo"></div>
+                                        </div>
+                                        <button onClick="Simulator.saveLink()"><img src='assets/shared/ui/on_success.webp'>Apply changes</button>
+                                        <button onClick="Simulator.backToLayout()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                                    </div>
+                                    <div class="targetChange"></div>
+                                    <div class="options flex flex-end gap"></div>
+                                    <div id="simulatorConditionLayout" class="flex flex-columns gap">
+                                        <label>Conditions configuration</label>
+                                        <div id="simulatorConditionRequirements" class="requirements"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="operationsHolder full-height flex-grow hidden">
+                                <div id="simulatorLoadInterface" class="simulatorBlock operation hidden full-height scrollableBox">
+                                    <div class="simulatorTitle flex-auto">Simulations inventory</div>
+                                    <div class="flex flex-columns full-height flex-grow content scrollable-y">
+                                        <div class="header flex align-center gap">
+                                            <div class="flex-grow"></div>
+                                            <button onClick="Simulator.importData('data')">Import all</button>
+                                            <button onClick="Simulator.exportData()">Export all</button>
+                                            <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                                        </div>
+                                        <div class="output">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="simulatorSaveInterface" class="flex-grow simulatorBlock operation hidden full-height scrollableBox">
+                                    <div class="simulatorTitle flex-auto">Save to inventory</div>
+                                    <div class="flex flex-columns full-height flex-grow content scrollable-y">
+                                        <div class="header flex align-center gap">
+                                            <div class="flex-grow"></div>
+                                            <button onClick="Simulator.saveCommit(false)"><img src='assets/shared/ui/on_success.webp'>Save</button>
+                                            <button onClick="Simulator.saveCommit(true)" class="copyButton hidden"><img src='assets/shared/ui/on_copy.webp'>Save a copy</button>
+                                            <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                                        </div>
+                                        <div class="output">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="simulatorResetInterface" class="flex-grow simulatorBlock operation hidden full-height scrollableBox">
+                                    <div class="simulatorTitle reset flex-auto">New simulation</div>
+                                    <div class="simulatorTitle change flex-auto">Starting item change</div>
+                                    <div class="flex flex-columns full-height flex-grow content scrollable-y">
+                                        <div class="header flex align-center gap">
+                                            <div class="flex-grow"></div>
+                                            <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                                        </div>
+                                        <div class="flex flex-columns align-center">
+                                            <h4>Starting item source</h4>
+                                            <div class="output flex align-center gap flex-wrap"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel">
+                                <div id="simulatorStickySidePanel" class="flex flex-columns gap invisibleWhenSimulatorDisabled">
+                                    <div id="simulatorStartingItemOutput"></div>
+                                    <div id="simulatorCurrentItemOutput"></div>
+                                    <div id="simulatorResultItemOutput"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorZoneTemplate">
+            <div class="simulatorOutput full-width hidden flex flex-columns gap">
+                <div class="flex gap-big">
+                    <div id="simulatorSimulation" class="flex-grow flex flex-columns gap-big">
+                        <div class="configuration flex gapx align-end flex-wrap"></div>
+                        <div class="buttons flex gap">
+                            <button class="game" onClick="Simulator.hide()">Back to Crafting</button>
+                            <button class="game operationSimulatorButton" onClick="Simulator.reset()">New Simulation</button>
+                            <button class="game operationSimulatorButton" onClick="Simulator.load()">Load</button>
+                            <button class="game operationSimulatorButton" onClick="Simulator.save()">Save</button>
+                            <button class="game green runSimulationButton" onClick="Simulator.start()">Run simulation</button>
+                            <button class="game orange clearSimulationButton" onClick="Simulator.clear()">Clear simulation</button>
+                            <button class="game red stopSimulationButton" onClick="Simulator.stop()">Stop simulation</button>
+                        </div>
+                        <div id="simulatorLayout" class="simulatorBlock layout flex">
+                            <div class="sidebar setup">
+                                <div class="flex flex-columns gap">
+                                    <div class="options flex flex-columns gap">
+                                        <div class="option flex flex-columns">
+                                            <label>Starting step</label>
+                                            <div class="content flex flex-columns">
+                                                <button onClick="Simulator.selectStartingStep()" id="simulationStartingStepButton">Automatic</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick="Simulator.addStep()">Add a step</button>
+                                    <div id="simulatorStepList" class="flex flex-columns gap"></div>
+                                </div>
+                            </div>
+                            <div class="sidebar feedback">
+                                <div class="flex flex-columns gap">
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Run count</div>
+                                        <div id="simulatorStatRunCount" class="simulatorStat"></div>
+                                    </div>
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Steps ran</div>
+                                        <div id="simulatorStatStepsRan" class="simulatorStat"></div>
+                                    </div>
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Items completed</div>
+                                        <div id="simulatorStatItemsCompleted" class="simulatorStat"></div>
+                                    </div>
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Success chance</div>
+                                        <div id="simulatorStatSuccessChance" class="simulatorStat"></div>
+                                    </div>
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Target</div>
+                                        <div id="simulatorStatTarget" class="simulatorStat"></div>
+                                    </div>
+                                    <div class="flex align-center gap-sml">
+                                        <div class="label flex-grow">Time elapsed</div>
+                                        <div id="simulatorStatTimeElapsed" class="simulatorStat"></div>
+                                    </div>
+                                    <div id="simulatorProcessorOuput" class="processorOutput flex flex-columns gap-mini"></div>
+                                    <button class="small simulatorWhenStoppedButton toggleCanvasZone" onClick="Simulator.toggleCanvasZone()">Back to flow</button>
+                                    <button class="small simulatorWhenStoppedButton toggleResultsZone hidden" onClick="Simulator.toggleResultsZone()">Go to results</button>
+                                </div>
+                            </div>
+                            <div id="simulatorCanvasZone" class="canvas flex-grow flex flex-columns">
+                                <div class="simulatorTitle">Simulator flow</div>
+                                <div id="simulatorCanvas" class="flex-grow"></div>
+                            </div>
+                            <div id="simulatorSimulationResultsZone" class="flex-grow flex flex-columns hidden">
+                                <div class="simulatorTitle">Results per step</div>
+                                <div id="simulatorSimulationResults" class="flex-grow"></div>
+                            </div>
+                        </div>
+                        <div id="simulatorStepEditor" class="simulatorBlock hidden flex flex-columns">
+                            <div class="simulatorTitle">Step edition</div>
+                            <div class="header flex align-center gap">
+                                <button onClick="Simulator.removeStep()">Remove</button>
+                                <button onClick="Simulator.copyStep()">Copy</button>
+                                <div class="titleHolder flex-grow"></div>
+                                <button onClick="Simulator.saveStep()"><img src='assets/shared/ui/on_success.webp'>Apply changes</button>
+                                <button onClick="Simulator.backToLayout()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                            </div>
+                            <div class="options flex flex-end gap"></div>
+                            <div id="simulatorStepActionChooser" class="action flex flex-columns gap"></div>
+                            <div class="links">
+                                <label class="flex">Route priority order</label>
+                                <div class="routeOrder flex flex-columns gap-sml"></div>
+                            </div>
+                            <div class="extendedOptions"></div>
+                        </div>
+                        <div id="simulatorConditionEditor" class="simulatorBlock hidden">
+                            <div class="simulatorTitle">Link edition</div>
+                            <div class="header flex align-center gap">
+                                <button onClick="Simulator.removeLink()" class="removeLinkButton">Remove link</button>
+                                <button onClick="Simulator.changeTarget()" class="changeTargetButton">Change target</button>
+                                <div class="titleHolder flex-grow flex align-center gap">
+                                    <svg viewBox="0 0 16 16" class="link">
+                                        <use href="assets/shared/ui/route-link.svg#link"></use>
+                                    </svg>
+                                    <div id="simulatorConditionFrom"></div>
+                                    <img src="assets/shared/ui/arrow-separator.webp" />
+                                    <div id="simulatorConditionTo"></div>
+                                </div>
+                                <button onClick="Simulator.saveLink()"><img src='assets/shared/ui/on_success.webp'>Apply changes</button>
+                                <button onClick="Simulator.backToLayout()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                            </div>
+                            <div class="targetChange"></div>
+                            <div class="options flex flex-end gap"></div>
+                            <div id="simulatorConditionLayout">
+                                <label>Conditions configuration</label>
+                                <div id="simulatorConditionRequirements" class="requirements"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="operationsHolder flex-grow hidden">
+                        <div id="simulatorLoadInterface" class="simulatorBlock operation hidden">
+                            <div class="simulatorTitle">Simulations inventory</div>
+                            <div class="header flex align-center gap">
+                                <div class="flex-grow"></div>
+                                <button onClick="Simulator.importData('data')">Import all</button>
+                                <button onClick="Simulator.exportData()">Export all</button>
+                                <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                            </div>
+                            <div class="output">
+
+                            </div>
+                        </div>
+                        <div id="simulatorSaveInterface" class="flex-grow simulatorBlock operation hidden">
+                            <div class="simulatorTitle">Save to inventory</div>
+                            <div class="header flex align-center gap">
+                                <div class="flex-grow"></div>
+                                <button onClick="Simulator.saveCommit(false)"><img src='assets/shared/ui/on_success.webp'>Save</button>
+                                <button onClick="Simulator.saveCommit(true)" class="copyButton hidden"><img src='assets/shared/ui/on_copy.webp'>Save a copy</button>
+                                <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                            </div>
+                            <div class="output">
+
+                            </div>
+                        </div>
+                        <div id="simulatorResetInterface" class="flex-grow simulatorBlock operation hidden">
+                            <div class="simulatorTitle reset">New simulation</div>
+                            <div class="simulatorTitle change">Starting item change</div>
+                            <div class="header flex align-center gap">
+                                <div class="flex-grow"></div>
+                                <button onClick="Simulator.backToSimulator()"><img src='assets/shared/ui/on_failure.webp'>Back to layout</button>
+                            </div>
+                            <div class="flex flex-columns align-center">
+                                <h4>Starting item source</h4>
+                                <div class="output flex align-center gap flex-wrap"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div id="simulatorStickySidePanel" class="flex flex-columns gap">
+                            <div id="simulatorStartingItemOutput"></div>
+                            <div id="simulatorCurrentItemOutput"></div>
+                            <div id="simulatorResultItemOutput"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorResultsTableTemplate">
+            <div class="simulatorResultsTable spendingTable table full-width">
+                <div class="header">
+                    <div class="text-center">#</div>
+                    <div>Step</div>
+                    <div class="stat">Actions</div>
+                    <div class="stat">Passed</div>
+                    <div class="stat">Percentage</div>
+                    <div class="stat">Ratio</div>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorStepTemplate">
+            <div class="simulatorStep flex flex-columns noselect dragElement palette-item">
+                <div class="header flex align-center">
+                    <div class="loopOnFail" tooltip="Loop on failure" tooltip-position="bottom snap-left">
+                        <svg viewBox="0 0 16 16">
+                            <use href="assets/shared/ui/simulator-loop.svg#loop4"></use>
+                        </svg>
+                    </div>
+                    <div class="title flex-grow flex align-center justify-center gap-sml" onClick="Simulator.editStep(this)"></div>
+                    <div class="dragHandle">⠿</div>
+                    <div class="viewItem"><img src='assets/shared/ui/preview.png' /></div>
+                </div>
+                <div class="action" onClick="Simulator.editAction(this)"></div>
+                <div class="links flex justify-center gap-sml">
+                    <div class="start" tooltip="Restart condition" tooltip-position="bottom snap-left" onClick="Simulator.editLink(this,'start')">
+                        <svg viewBox="0 0 16 16">
+                            <use href="assets/shared/ui/simulator-start.svg#home"></use>
+                        </svg>
+                    </div>
+                    <div class="link-action" onClick="Simulator.linkAction(this)">
+                        <div class="link" tooltip="New link" tooltip-position="bottom snap-left">
+                            <svg viewBox="0 0 16 16">
+                                <use href="assets/shared/ui/route-link.svg#link"></use>
+                            </svg>
+                        </div>
+                        <div class="unlink" tooltip="Remove link" tooltip-position="bottom snap-left">
+                            <svg viewBox="0 0 16 16">
+                                <use href="assets/shared/ui/route-unlink.svg#unlink"></use>
+                            </svg>
+                        </div>
+                        <div class="cancel" tooltip="Undo" tooltip-position="bottom snap-left">
+                            <svg viewBox="0 0 16 16">
+                                <use href="assets/shared/ui/route-cancel.svg#cancel-circle"></use>
+                            </svg>
+                        </div>
+                        <div class="target" tooltip="Create link" tooltip-position="bottom snap-left">
+                            <svg viewBox="0 0 16 16">
+                                <use href="assets/shared/ui/route-target.svg#target"></use>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="end" tooltip="End condition" tooltip-position="bottom snap-left" onClick="Simulator.editLink(this,'end')">
+                        <svg viewBox="0 0 16 16">
+                            <use href="assets/shared/ui/simulator-end.svg#flag7"></use>
+                        </svg>
+                    </div>
+                </div>
+                <div class="status flex flex-columns gap-sml">
+                    <div class="flex gap-sml align-center">
+                        <div tooltip='Passed' tooltip-position="snap-left bottom"><img src="assets/shared/ui/on_success.webp" /></div>
+                        <div class="stat success"></div>
+                        <div class="flex-grow stat percent"></div>
+                        <div class="stat failure"></div>
+                        <div tooltip='Failed' tooltip-position="snap-left bottom"><img src="assets/shared/ui/on_failure.webp" /></div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorStepLinkTemplate">
+            <div class="linkNode">
+                <div class="wrapper">
+                    <div class="top"></div>
+                    <div class="joiner"></div>
+                    <div class="bottom"></div>
+                    <div class="way">
+                        <svg viewBox="0 0 16 16" class="target">
+                            <use href="assets/shared/ui/route-arrow.svg#arrow-right14"></use>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template id="simulatorStepLinkHandlerTemplate">
+            <div class="linkNodeHandler" onClick="Simulator.editLink(this)">
+                <div class="vert-align">
+                    <svg viewBox="0 0 16 16" class="conditions">
+                        <use href="assets/shared/ui/route-conditions.svg#tree6"></use>
+                    </svg>
+                    <svg viewBox="0 0 16 16" class="bypass">
+                        <use href="assets/shared/ui/route-pass.svg#tree5"></use>
+                    </svg>
+                    <div class="stat count"></div>
+                    <div class="stat percent"></div>
+                </div>
+            </div>
+        </template>
+
+        <template id="fossilOptimizerTemplate">
+            <div id="fossilOptimizerLayout" class="flex flex-columns gap">
+                <div class="flex gap align-start">
+                    <div class="flex gap flex-columns flex-grow align-start">
+                        <div class="uiOptions flex gap align-end"></div>
+                        <div class="flex gap flex-wrap">
+                            <button id="startFossilOptimizerButton" class="game button green" onClick="fossilOptimizer.run()">Run Fossil Optimizer</button>
+                            <button id="stopFossilOptimizerButton" class="game button red hidden" onClick="fossilOptimizer.stop()">Stop Fossil Optimizer</button>
+                            <button id="clearFossilOptimizerButton" class="game button orange hidden" onClick="fossilOptimizer.clear()">Clear Results</button>
+                        </div>
+                    </div>
+                    <div id="fossilOptimizerProcessorOutput" class="processorOutput flex flex-columns gap-sml"></div>
+                </div>
+                <div class="resultZone">
+
+                </div>
+            </div>
+        </template>
+
+        <template id="fossilOptimizerOutputTemplate">
+            <div id="fossilOptimizerOutput" class="flex gap align-start">
+                <div class="byTries spendingTable table flex-grow">
+                    <div class="header">
+                        <div class="text-center">#</div>
+                        <div class='full-width'>Raw efficiency</div>
+                        <div class="text-center">Chance</div>
+                        <div class="text-center">Tries</div>
+                        <div class="text-center">Costs</div>
+                    </div>
+                </div>
+                <div class="byPrice spendingTable table flex-grow">
+                    <div class="header">
+                        <div class="text-center">#</div>
+                        <div class='full-width'>Cost efficiency</div>
+                        <div class="text-center">Chance</div>
+                        <div class="text-center">Tries</div>
+                        <div class="text-center">Costs</div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <dialog id="inventoryDialog" class="over-shadow"></dialog>
+    
+    <script type="text/javascript">
+        $(document).ready(function() {
+            coeInit();
+                    });
+    </script>
+</body>
+
+</html>

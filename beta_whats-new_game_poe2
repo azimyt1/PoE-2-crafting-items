@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+    <title>Craft of Exile</title>
+    <meta name="title" property="og:title" content="Craft of Exile" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="https://beta.craftofexile.com/" />
+    <meta name="keywords" content="path of exile,craft,exile,craft of exile,crafting,simulator,calculator,probability,probabilities,fossil,essence,currency" />
+    <meta name="description" property="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <meta name="og:title" content="Craft of Exile" />
+    <meta name="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script type="text/javascript" src="ext/jquery.min.js?v=1772417848"></script><script type="text/javascript" src="ext/pretty-print-json.min.js?v=1772417848"></script><script type="text/javascript" src="packages/files/package_poe2.js?v=1790355360"></script><link rel="stylesheet" type="text/css" href="packages/files/package.css?v=1790030118"/><link rel="stylesheet" type="text/css" href="ext/pretty-print-json.css?v=1772417848"/><link rel="stylesheet" type="text/css" href="css/media.css?v=1784744880"/><link rel="stylesheet" type="text/css" href="css/poe2.css?v=1789656882"/><link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet"><script type="text/javascript" src="json/settings.json?v=1789656882"></script><script type="text/javascript" src="json/poe2/4.5.5.3/localization/english.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/data.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/prices.json?v=1790355360"></script>    <!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-LP84H6PC5N"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-LP84H6PC5N');</script>    <script>window["nitroAds"] = window["nitroAds"] || {createAd: function() {window.nitroAds.queue.push(["createAd", arguments]);},queue: []};</script><script async src="https://s.nitropay.com/ads-556.js"></script></head>
+
+<body class='game_poe2 basePicking'>
+    <div id='coeConstants' class='hidden'>{"path":"whats-new","baseurl":"https:\/\/beta.craftofexile.com\/","fullurl":"https:\/\/beta.craftofexile.com\/whats-new","debug":false,"get":{"page":"whats-new","game":"poe2"},"online":true,"nitro":true,"game":"poe2","patch":"4.5.5.3","core":{"defaultLanguage":"English","languages":["English","French","German","Japanese","Korean","Portuguese","Russian","Spanish","Thai","Traditional Chinese"],"currentPatch":"4.5.5.3","patches":[{"number":"4.5.5.3","label":"0.5.5.3","league":"Forbidden Rites"},{"number":"4.5.5.1.5","label":"0.5.5.1.5","league":"Forbidden Rites"},{"number":"4.5.4.1.2","label":"0.5.4.1.2","league":"Return of the Ancients"},{"number":"4.5.3.1.7","label":"0.5.3.1.7","league":"Return of the Ancients"},{"number":"4.5.2.1.2","label":"0.5.2.1.2","league":"Return of the Ancients"},{"number":"4.5.1.1.3","label":"0.5.1.1.3","league":"Return of the Ancients"},{"number":"4.4.0.4.3","label":"0.4.0.4.3","league":"Fate of the Vaal"}]},"workers":{"calculatorProcessor":"packages\/files\/package_worker_calculator_processor_poe2.js?v=1790355360","simulatorProcessor":"packages\/files\/package_worker_simulator_processor_poe2.js?v=1790355360","fossilOptimizerProcessor":"packages\/files\/package_worker_fossil_optimizer_processor.js?v=1790355360"},"patron":false,"connected":false}</div>
+
+    <div id="snackbarsLeft" class="snackbars flex gap-big flex-columns"></div>
+    <div id="snackbarsRight" class="snackbars flex gap-big flex-columns align-end"></div>
+
+    <header class="top flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center">
+            <nav id="linksMenu" class="topMenu flex flex-grow gap">
+                <a href="https://www.arpg.info" target="_blank">arpg.info</a>
+                <a href="https://www.craftofexile.com" target="_blank">craftofexile.com</a>
+            </nav>
+            <nav id="topMenu" class="topMenu flex flex-grow justify-end align-center gap">
+                <a href="whats-new" class="whats-new">*NEW*</a>
+                <a href="roadmap" class="roadmap">Roadmap</a>
+                <a href="changelog" class="changelog">Changelog</a>
+                <a href="compare" class="compare">Compare</a>
+                <a href="about" class="about">About</a>
+                <a href="https://discord.gg/bGscbKSygD" target="_blank" title="Craft of Exile Discord"><img src="assets/discord_sml.png" class="discord" /></a>
+                <a href="patreon-auth" class="patreon-auth" title="Connect with Patreon"><img src="assets/patreon-square.png" class="patreon" /></a>
+                <!--<a href="poe-auth" class="poe-auth" title="Login with Path of Exile"><img src="assets/login-icon.png" class="login" /></a>-->
+            </nav>
+        </div>
+    </header>
+
+    <header class="main flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center justify-end">
+            <a id="siteTitle" href="?game=poe2"><img src="assets/full-logo.png" /></a>
+            <nav id="mainMenu" class="flex flex-grow">
+                <a href="" class="tool">Crafting</a>
+                <a href="data" class="data">Data</a>
+            </nav>
+                        <div id="gameToggler" class="flex nowrap">
+                <a href="whats-new?game=poe1" class="poe1">POE 1</a>
+                <a href="whats-new?game=poe2" class="poe2">POE 2</a>
+            </div>
+            <div id="settingsZone"></div>
+            <div id="languageToggler">
+                <div class="current"><img src='assets/shared/ui/lflg_us.png' /></div>
+                <div class="options">
+                    <div class="wrapper med-shadow">
+                        <h1>Languages</h1>
+                        <div class="list">
+                                                            <div key="us" class="active" onClick="UIManager.changeLanguage('us')"><img src='assets/shared/ui/lflg_us.png' />English</div>
+                                                            <div key="de" class="" onClick="UIManager.changeLanguage('de')"><img src='assets/shared/ui/lflg_de.png' />Deutsch</div>
+                                                            <div key="sp" class="" onClick="UIManager.changeLanguage('sp')"><img src='assets/shared/ui/lflg_sp.png' />Español</div>
+                                                            <div key="fr" class="" onClick="UIManager.changeLanguage('fr')"><img src='assets/shared/ui/lflg_fr.png' />Français</div>
+                                                            <div key="jp" class="" onClick="UIManager.changeLanguage('jp')"><img src='assets/shared/ui/lflg_jp.png' />Japanese</div>
+                                                            <div key="pt" class="" onClick="UIManager.changeLanguage('pt')"><img src='assets/shared/ui/lflg_pt.png' />Português</div>
+                                                            <div key="ru" class="" onClick="UIManager.changeLanguage('ru')"><img src='assets/shared/ui/lflg_ru.png' />Русский</div>
+                                                            <div key="th" class="" onClick="UIManager.changeLanguage('th')"><img src='assets/shared/ui/lflg_th.png' />ภาษาไทย</div>
+                                                            <div key="cn" class="" onClick="UIManager.changeLanguage('cn')"><img src='assets/shared/ui/lflg_cn.png' />简体中文</div>
+                                                            <div key="kr" class="" onClick="UIManager.changeLanguage('kr')"><img src='assets/shared/ui/lflg_kr.png' />한국어</div>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex justify-center gap-big">
+        <div class="sidebars flex">
+            <div id="coe2_left_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+        <div id="content" class="flex flex-wrap gap-big align-center">
+            <div id="ui" class="full-width flex gap-big flex-columns">
+                <div class="uiLayout flex flex-wrap gap-big flex-columns flex-take"></div>
+                <div class="uiAdBanner flex flex-top-banner">
+                    <div id="coe2_top_banner_ad" sizes='[["320", "100"],["320", "50"]]' class="adspace flex align-center justify-center top-banner">Ad space</div>
+                </div>
+            </div>
+            <div id="output" class="full-width"><style>
+    .bigLogoImage {
+        width: 600px;
+        max-width: 100%;
+    }
+
+    .messageBox {
+        margin: 0px;
+    }
+
+    .layout ul {
+        list-style-type: none;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin: 0px;
+        padding: 0px 0px 0px 0px;
+    }
+
+    .layout ul li {
+        position: relative;
+        padding-left: 18px;
+    }
+
+    .layout ul li:before {
+        position: absolute;
+        content: '\2714';
+        color: green;
+        left: 0px;
+        top: 0px;
+    }
+
+    .layout ul li>ul {
+        padding: var(--spacing-small) 0px;
+    }
+
+    .layout ul li>ul>li {
+        font-size: 12px;
+        color: #BBB;
+    }
+
+    .layout {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    article {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-mediumx);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    span.legacy:after {
+        content: "Legacy";
+    }
+
+    span.emulator,
+    span.calculator,
+    span.simulator {
+        font-size: 11px;
+        line-height: 11px;
+        padding: var(--spacing-mini);
+        background: #191919;
+        border-radius: 3px;
+    }
+
+    span.emulator:after {
+        content: "Emulator";
+        color: var(--scourged-color) !important;
+    }
+
+    span.calculator:after {
+        content: "Calculator";
+        color: var(--magic-color) !important;
+    }
+
+    span.simulator:after {
+        content: "Simulator";
+        color: var(--rare-color) !important;
+    }
+
+    @media (min-width: 700px) {
+        .layout {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1100px) {
+        .layout {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+</style>
+
+<div class="flex align-center justify-center flex-columns gap-bigx">
+    <img src="assets/big-coe2-logo.png" class="bigLogoImage" />
+    <h3 style="margin-bottom:0px">Introducing Craft of Exile 2</h3>
+    <div class="messageBox"><span class="color rare">Craft of Exile 2</span> is a complete refactor of <span
+            class="color rare">Craft of
+            Exile</span>
+        aiming to fix the lingering issues
+        of the old site as well as adding every possible crafting methods that were missing.<br><br>The following is a
+        shortlist of what
+        is <span class="color quest">new</span>. Please consult the <a href="roadmap" class="link">Roadmap</a> page to
+        see what I am
+        working on.</div>
+</div>
+
+<br><br>
+
+<div class="layout">
+    <article>
+        <h1>Calculator</h1>
+        <ul>
+            <li>Allows for complex requirement setups with multiple requirement groups (and, or, not)</li>
+            <li>Open affix/prefix/suffix as a requirement</li>
+            <li>Create a simulation from the current calculator setup feature</li>
+            <li>Visual feedback of worker steps being ran</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Emulator</h1>
+        <ul>
+            <li>Save items to local browser storage</li>
+            <li>Inventory browsing in the style of game tabs with import/export features</li>
+            <li>Last changes output window</li>
+            <li>Item property values editing</li>
+            <li>Item modifier values editing</li>
+            <li>Item sockets editing</li>
+            <li>Item flag editing (corruption, sanctification, mirror, split, etc)</li>
+            <li>Clear actions/spending history button</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Simulator</h1>
+        <ul>
+            <li>Flowchart editing area</li>
+            <li>Visual feedback directly in flowchart while running</li>
+            <li>Allows for multiple routes between steps</li>
+            <li>Save simulations to local browser storage</li>
+            <li>Load item state into crafting interface feature</li>
+            <li>Descriptions for each step</li>
+            <li>Results details for each individual routes</li>
+            <li>User-set base item cost for the pricing breakdown</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Features</h1>
+        <ul>
+            <li>The Calculator and Emulator are now a merged interface.</li>
+            <li>Optional fullscreen interfaces</li>
+            <li>User settings saved to local browser storage</li>
+            <li>Improved item visual output</li>
+            <li>Improved price tracking across all modules</li>
+            <li>Modifiers names now shown (of the brute, etc)</li>
+            <li>Toggle between classic and advanced item output using ALT</li>
+            <li>Links to wiki articles for items</li>
+            <li>Pin preferred crafting methods</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>User settings</h1>
+        <ul>
+            <li>Profiling notices</li>
+            <li>Reference text toggler</li>
+            <li>Prices in tooltips toggler</li>
+            <li>Default currency</li>
+            <li>League chooser for prices</li>
+            <li>Layout mode</li>
+            <li>Legacy elements toggler</li>
+            <li>Explicits output mode (split or combined)</li>
+            <li>Filter effect (cross-out or hidden)</li>
+            <li>Weight computations toggler</li>
+            <li>Default item output</li>
+            <li>Items ordering (alphabetical or drop level)</li>
+            <li>Tags filter toggler</li>
+            <li>Set up custom pricing for crafting items</li>
+            <li>Compact crafting UI mode</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Miscellaneous</h1>
+        <ul>
+            <li>Maximum modifier item level now taken into account</li>
+            <li>Generation weights now taken into account</li>
+            <li>Improved localization handling</li>
+            <li>Elevated modifiers shown as tier 0</li>
+            <li>Improved versioning (patches)</li>
+            <li>Proper implicit overwrite handling on synth and corrupt</li>
+            <li>Proper modifiers affecting local properties handling (quality, maximum prefix / suffix, etc)</li>
+            <li>Proper modifiers affecting augment values handling</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Path of Exile 1</h1>
+        <ul>
+            <li>Sacred Orb and item defences property handling</li>
+            <li>Additional included modifiers
+                <ul>
+                    <li>Synthesis modifiers</li>
+                    <li>Harvest enchantment modifiers</li>
+                    <li>Heist enchantment modifiers</li>
+                    <li>Blight ring enchantment modifiers</li>
+                    <li>Instilling and Enkindling enchantment modifiers</li>
+                    <li>Labyrinth enchantment modifiers <span class="legacy"></span></li>
+                    <li>Logbook implicit modifiers</li>
+                </ul>
+            </li>
+            <li>Crafting methods
+                <ul>
+                    <li>Generate normal, magic or rare item <span class="emulator"></span> <span
+                            class="calculator"></span> <span class="simulator"></span></li>
+                    <li>Sacred Orb <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Harvest Augment/Reforge <span class="calculator"></li>
+                    <li>Harvest Enchants, Change Influence, Synthesise an item <span class="emulator"></span> <span
+                            class="simulator"></span></li>
+                    <li>Harvest Elemental Damage Conversion <span class="emulator"></span> <span
+                            class="simulator"></span></li>
+                    <li>Tailoring/Tempering Orb <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Bloodstained Fossil <span class="calculator"></span></li>
+                    <li>Bestiary Prefix to Suffix Conversion <span class="calculator"></li>
+                    <li>Bestiary : Add a crafted Meta-mod, Add influenced mods, etc <span class="emulator"></span> <span
+                            class="simulator"></span></li>
+                    <li>Tainted currencies<span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Proper Glyphic Fossil Calculations <span class="calculator"></span></li>
+                    <li>Bloodstained Fossil <span class="emulator"></span> <span class="calculator"></span> <span
+                            class="simulator"></span></li>
+                    <li>Allflame Crafting <span class="emulator"></span> <span class="calculator"></span> <span
+                            class="simulator"></span></li>
+            </li>
+        </ul>
+        </li>
+        <li>New bases
+            <ul>
+                <li>Strongboxes</li>
+                <li>Relics</li>
+                <li>Logbooks</li>
+                <li>Primeval Remnants <span class="legacy"></span></li>
+                <li>Charms <span class="legacy"></span></li>
+                <li>Sentinel <span class="legacy"></span></li>
+            </ul>
+        </li>
+        <li>Fossil optimizer <span class="calculator"></span>
+            <ul>
+                <li>Remaining time, combinations per second feedback</li>
+                <li>Editable worker count for splitting task</li>
+            </ul>
+        </li>
+        <li>Proper heist jewellery affix limit handling</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Path of Exile 2</h1>
+        <ul>
+            <li>Game reference text tooltips</li>
+            <li>Crafting methods
+                <ul>
+                    <li>Generate normal, magic or rare item <span class="emulator"></span> <span
+                            class="calculator"></span> <span class="simulator"></span></li>
+                    <li>Armourer's Scrap <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Artificer's Orb <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Blacksmith's Whetstone <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Architect's Orb <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Vaal Infusers <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Blazing, Chilling, Crackling and Void Flux <span class="emulator"></span> <span
+                            class="simulator"></span></li>
+                    <li>Distilled Emotions <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Altered Collarbone <span class="emulator"></span> <span class="simulator"></span></li>
+                    <li>Ancient Infuser <span class="emulator"></span> <span class="simulator"></span></li>
+                </ul>
+            </li>
+            <li>New bases
+                <ul>
+                    <li>Strongboxes</li>
+                    <li>Grasping Mail</li>
+                </ul>
+            </li>
+            <li>Special bases support (gloam, tenebrous, dusk, penumbra amulets/rings, distorted
+                amulet, etc)</li>
+            <li>Special runes support (Modifier conversions, additionnal suffix, etc)</li>
+            <li>Special runes modpools (Chronomancy, Marksman, Destruction, Soul, etc)</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Data</h1>
+        <ul>
+            <li>Item data browser</li>
+            <li>Modifier data browser</li>
+            <li>Filters and search feature</li>
+            <li>View raw modifier tiers and group data details <span class="emulator"></span></li>
+            <li>View raw item data details <span class="emulator"></span> <span class="simulator"></span></li>
+            <li>Improved patch data compare feature</li>
+        </ul>
+    </article>
+</div></div>
+                        <div class="flex justify-center full-width">
+                <div id="coe2_footer_ad" sizes='[["970", "250"],["970", "90"],["728", "90"],["300", "250"],["320", "50"],["320", "100"]]' class="adspace flex align-center justify-center">Ad space</div>
+            </div>
+        </div>
+        <div class="sidebars flex">
+            <div id="coe2_right_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+    </main>
+
+    <footer class="text-center flex flex-columns gap">
+        <nav id="bottomMenu" class="topMenu flex flex-grow justify-center gap">
+            <a href="privacy" class="privacy">Privacy</a>
+            <a href="developers" class="developpers">Developers</a>
+        </nav>
+        <div class="disclaimer">craftofexile.com is not affiliated with or endorsed by Grinding Gear Games</div>
+    </footer>
+
+    <template id="settingsTemplate">
+        <div class="settings">
+            <div class="holder">
+                <div class="wrapper med-shadow">
+
+                </div>
+            </div>
+            <div class="contentTemplate hidden">
+                <h1></h1>
+                <div class="content grid gap"></div>
+            </div>
+            <svg viewBox="0 0 512 512" onClick="document.location='settings'">
+                <use href="assets/shared/ui/settings.svg#settings"></use>
+            </svg>
+        </div>
+    </template>
+
+    <template id="noticeTemplate">
+        <div class="notice flex flex-columns">
+            <div class="header flex gap align-center"><label class="flex-grow"></label><button class="closer small" onClick="Notices.close(this)">Close</button></div>
+            <div class="message flex gap align-center">
+                <div class="icon"></div>
+                <div class="text"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="snackbarTemplate">
+        <div class="snackbar med-shadow flex flex-columns text-center">
+            <label></label>
+            <div class="message"></div>
+        </div>
+    </template>
+
+    <template id="selectorTemplate">
+        <div class="selector">
+            <label class="flex gap align-center">
+                <div class="toggler noselect">
+                    <div delta="1">Show</div>
+                    <div delta="0">Hide</div>
+                </div>
+            </label>
+            <div class="subset"></div>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="dropdownTemplate">
+        <div class="dropdown inline-block">
+            <label class="flex gap align-center">
+                <div class="output flex align-center gap-sml flex-grow">
+                    <div class="current flex-grow flex align-center gap"></div>
+                    <div class="placeholder flex-grow"></div>
+                    <div class="image noselect">
+                        <img src="assets/shared/ui/expand_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/expand_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/expand_active.webp" class="active" />
+                    </div>
+                </div>
+                <div class="editing flex align-center gap flex-grow">
+                    <div class="flex-grow"><input type="text" /></div>
+                    <div class="image closer noselect">
+                        <img src="assets/shared/ui/close_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/close_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/close_active.webp" class="active" />
+                    </div>
+                </div>
+            </label>
+            <ul class="med-shadow"></ul>
+        </div>
+    </template>
+
+    <template id="togglerTemplate">
+        <div class="toggler">
+            <label></label>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="itemTemplate">
+        <div class="item">
+            <div class="flex flex-columns">
+                <div class="header flex">
+                    <div class="side left flex align-center"></div>
+                    <div class="center flex-grow">
+                        <div class="name"></div>
+                        <div class="label"></div>
+                    </div>
+                    <div class="side right flex align-center justify-end"></div>
+                </div>
+                <div class="output flex gap align-center justify-center">
+                    <div class="image"></div>
+                    <div class="text"></div>
+                    <div class="destroyed">
+                        <div class="message">Item has been destroyed</div>
+                        <div class="flex editButtonZone gap align-center justify-center"><button class="small button restore">Restore</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="inputTemplate">
+        <div class="input">
+            <div>
+                <input type="text" class="med-shadow" />
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="textAreaTemplate">
+        <div class="textarea">
+            <div>
+                <textarea class="med-shadow"></textarea>
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="itemDetailsTemplate">
+        <div class="itemDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Class details</h2>
+                </div>
+                <div class="classData"></div>
+            </div>
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Item details</h2>
+                </div>
+                <div class="itemData"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="settingsImporterTemplate">
+        <div id="settingsImporterZone" class="content importerZone">
+            <div class="importer flex flex-columns gap">
+                <textarea id="settingsImporterInput" placeholder="Paste your data here"></textarea>
+                <button onClick="user.importSettingsCommit()">Proceed</button>
+            </div>
+            <div class="errors flex flex-columns gap hidden">
+                <h2>One or more issues encountered while attempting import</h2>
+                <div class="list flex flex-columns gap"></div>
+                <button onClick="user.importSettingsReturn()">Return</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="changePatchTemplate">
+        <div id="changePatchZone" class="content flex flex-columns gap">
+        </div>
+    </template>
+
+    <template id="modifierDetailsTemplate">
+        <div class="modifierDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Group details</h2>
+                </div>
+                <div class="groupDetails"></div>
+            </div>
+            <div class="flex flex-columns modifiersZone">
+                <div>
+                    <h2>Modifier details</h2>
+                </div>
+                <div class="modifierDetails"></div>
+            </div>
+        </div>
+    </template>
+
+    <dialog id="noticeDialog" class="over-shadow"></dialog>
+
+    
+    <script type="text/javascript">
+        $(document).ready(function() {
+            coeInit();
+                    });
+    </script>
+</body>
+
+</html>

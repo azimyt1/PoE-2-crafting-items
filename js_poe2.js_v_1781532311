@@ -1,0 +1,1982 @@
+const specialBases = {
+    // poe2 
+    "dusk_amulet": 894,
+    "gloam_amulet": 895,
+    "penumbra_amulet": 896,
+    "tenebrous_amulet": 897,
+    "dusk_ring": 898,
+    "gloam_ring": 899,
+    "penumbra_ring": 900,
+    "tenebrous_ring": 901,
+    "portent_amulet": 1570,
+    "lament_amulet": 1569,
+    "absent_amulet": 1571,
+
+    // poe1
+    "cogwork": -1,
+    "geodesic": -2,
+    "simplex": -3,
+    "focused": -4,
+    "manifold": -5,
+    "helical": -6,
+    "ratchet": -7,
+    "composite": -8,
+    "astrolabe": -9
+};
+
+poec_specialBItems = {};
+
+/* CALCULATOR */
+poec_methods = [
+    { "id": "chaos", "name": "Chaos Orb", "plural": "Chaos Orbs", "pre": false, "options": null, "classes": "rare", "img": "ui_poe2/method_chaos" },
+    { "id": "exalted", "name": "Exalted Orb", "plural": "Exalted Orbs", "pre": true, "options": "open_psb catalyst", "classes": "rare", "img": "ui_poe2/method_exalted" },
+    { "id": "alchemy", "name": "Orb of Alchemy", "plural": "Orbs of Alchemy", "pre": false, "options": null, "classes": "rare", "img": "ui_poe2/method_alchemy" },
+    { "id": "augmentation", "name": "Orb of Augmentation", "plural": "Orbs of Augmentation", "pre": true, "options": "open_psb catalyst", "img": "ui_poe2/method_augmentation" },
+    { "id": "transmute", "name": "Orb of Transmutation", "plural": "Orbs of Transmutation", "pre": false, "options": null, "img": "ui_poe2/method_transmute" },
+    { "id": "regal", "name": "Regal Orb", "plural": "Regal Orbs", "pre": true, "options": "catalyst", "classes": "rare", "img": "ui_poe2/method_regal" },
+    { "id": "annul", "name": "Orb of Annulment", "plural": "Orbs of Annulment", "pre": true, "options": "catalyst", "img": "ui_poe2/method_annul" }
+];
+
+var crsim_igntypes = "|28|17|19|38|";
+var crsim_ignhomotypes = [38];
+
+let currencyModLevelFilter = {
+    "transmute": {
+        "greater": 44,
+        "perfect": 70
+    },
+    "augmentation": {
+        "greater": 44,
+        "perfect": 70
+    },
+    "regal": {
+        "greater": 35,
+        "perfect": 50
+    },
+    "exalted": {
+        "greater": 35,
+        "perfect": 50
+    },
+    "chaos": {
+        "greater": 35,
+        "perfect": 50
+    }
+}
+
+function getCurrencyModLevelFilter(method, type) {
+    if (currencyModLevelFilter[method]) {
+        if (currencyModLevelFilter[method][type]) {
+            return currencyModLevelFilter[method][type];
+        }
+    }
+    return null;
+}
+
+poec_advmets = [
+    { "id": "gt", "name": "Greater", "method": "transmute", "tier_filter": getCurrencyModLevelFilter("transmute", "greater") },
+    { "id": "pt", "name": "Perfect", "method": "transmute", "tier_filter": getCurrencyModLevelFilter("transmute", "perfect") },
+    { "id": "gc", "name": "Greater", "method": "chaos", "tier_filter": getCurrencyModLevelFilter("chaos", "greater") },
+    { "id": "pc", "name": "Perfect", "method": "chaos", "tier_filter": getCurrencyModLevelFilter("chaos", "perfect") },
+    { "id": "ge", "name": "Greater", "method": "exalted", "tier_filter": getCurrencyModLevelFilter("exalted", "greater") },
+    { "id": "pe", "name": "Perfect", "method": "exalted", "tier_filter": getCurrencyModLevelFilter("exalted", "perfect") },
+    { "id": "ga", "name": "Greater", "method": "augmentation", "tier_filter": getCurrencyModLevelFilter("augmentation", "greater") },
+    { "id": "pa", "name": "Perfect", "method": "augmentation", "tier_filter": getCurrencyModLevelFilter("augmentation", "perfect") },
+    { "id": "gr", "name": "Greater", "method": "regal", "tier_filter": getCurrencyModLevelFilter("regal", "greater") },
+    { "id": "pr", "name": "Perfect", "method": "regal", "tier_filter": getCurrencyModLevelFilter("regal", "perfect") },
+];
+
+let greaterPerfectSubset = {
+    "normal": { "desc": "Normal", "name": "Normal" },
+    "greater": { "desc": "Greater", "name": "Greater" },
+    "perfect": { "desc": "Perfect", "name": "Perfect" }
+};
+
+let omensForMethods = {
+    'alchemy': ["dextral_alchemy", "sinistral_alchemy"],
+    'poe2_alchemy': ["dextral_alchemy", "sinistral_alchemy"],
+    'annul': ["dextral_annulment", "greater_annulment", "sinistral_annulment", "light"],
+    'regal': ["dextral_coronation", "sinistral_coronation", "homogenising_coronation"],
+    'divine': ["blessed"],
+    'chaos': ["whittling", "sinistral_erasure", "dextral_erasure"],
+    'exalted': ["sinistral_exaltation", "dextral_exaltation", "greater_exaltation", "homogenising_exaltation"],
+    "poe2_perfect_essence": ["dextral_crystallisation", "sinistral_crystallisation"],
+    "poe2_desecration": ["dextral_necromancy", "sinistral_necromancy", "liege", "sovereign", "blackblooded", "abyssal_echoes"]
+};
+
+let omensActiveInCalculator = ["dextral_annulment", "sinistral_annulment", "dextral_coronation", "sinistral_coronation", "homogenising_coronation", "sinistral_exaltation", "dextral_exaltation", "homogenising_exaltation"];
+
+let desecrationModSpawnRate = [0.8, 0.15, 0.05];
+let desecrationMinimumLevels = {
+    "ancient_ribs": 40,
+    "ancient_jawbone": 40,
+    "ancient_collarbone": 40
+};
+
+var poe2_jawbone_bases = "|4|11|12|13|15|16|17|18|20|21|22|23|24|25|216|217|218|219|220|221|222|223|224|225|226|227|228|";
+var poe2_rib_bases = "|5|6|8|9|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|229|230|231|232|";
+
+/* EMULATOR */
+crsim_actions = {
+    "currency": {
+        "transmute": {
+            "desc": "Upgrades a Normal item to a Magic item with 1 modifier", "name": "Orb of Transmutation", "img_folder": "_poe2", "subname": "Type", "subset": {
+                "normal": { "desc": "Upgrades a Normal item to a Magic item with 1 modifier", "name": "Normal" },
+                "greater": { "desc": "Upgrades a Normal item to a Magic item with 1 modifier of minimum level 55", "name": "Greater" },
+                "perfect": { "desc": "Upgrades a Normal item to a Magic item with 1 modifier of minimum level 70", "name": "Perfect" }
+            }
+        },
+        "augmentation": {
+            "desc": "Augments a Magic item with a new random modifier", "name": "Orb of Augmentation", "img_folder": "_poe2", "subname": "Type", "subset": {
+                "normal": { "desc": "Augments a Magic item with a new random modifier", "name": "Normal" },
+                "greater": { "desc": "Augments a Magic item with a new random modifier of minimum level 55", "name": "Greater" },
+                "perfect": { "desc": "Augments a Magic item with a new random modifier of minimum level 70", "name": "Perfect" }
+            }
+        },
+        "regal": {
+            "desc": "Upgrades a Magic item to a Rare item, adding 1 modifier", "name": "Regal Orb", "img_folder": "_poe2", "subname": "Type", "subset": {
+                "normal": { "desc": "Upgrades a Magic item to a Rare item, adding 1 modifier", "name": "Normal" },
+                "greater": { "desc": "Upgrades a Magic item to a Rare item, adding 1 modifier of minimum level 35", "name": "Greater" },
+                "perfect": { "desc": "Upgrades a Magic item to a Rare item, adding 1 modifier of minimum level 50", "name": "Perfect" }
+            }
+        },
+        //"alchemy": { "desc": "Upgrades a normal item to a rare item", "name": "Orb of Alchemy", "img_folder": "_poe2" },
+        "poe2_alchemy": { "desc": "Upgrades a Normal or Magic item to a Rare item with 4 random modifiers", "name": "Orb of Alchemy", "img_folder": "_poe2" },
+        "chaos": {
+            "desc": "Removes a random modifier and augments a Rare item with a new random modifier", "name": "Chaos Orb", "img_folder": "_poe2", "subname": "Type", "subset": {
+                "normal": { "desc": "Removes a random modifier and augments a Rare item with a new random modifier", "name": "Normal" },
+                "greater": { "desc": "Removes a random modifier and augments a Rare item with a new random modifier of minimum level 35", "name": "Greater" },
+                "perfect": { "desc": "Removes a random modifier and augments a Rare item with a new random modifier of minimum level 50", "name": "Perfect" }
+            }
+        },
+        "exalted": {
+            "desc": "Augments a rare item with a new random modifier", "name": "Exalted Orb", "img_folder": "_poe2", "subname": "Type", "subset": {
+                "normal": { "desc": "Augments a Rare item with a new random modifier", "name": "Normal" },
+                "greater": { "desc": "Augments a Rare item with a new random modifier of minimum level 35", "name": "Greater" },
+                "perfect": { "desc": "Augments a Rare item with a new random modifier of minimum level 50", "name": "Perfect" }
+            }
+        },
+        "annul": { "desc": "Removes a random modifier from an item", "name": "Orb of Annulment", "img_folder": "_poe2" },
+        "divine": { "desc": "Randomises the numeric values of the random properties on an item", "name": "Divine Orb", "img_folder": "_poe2" },
+        "artificer": { "desc": "Adds a socket to a martial weapon or armour", "name": "Artificer's Orb", "img_folder": "_poe2" },
+        "fracturing": { "desc": "Fracture a random modifier on a rare item with at least 4 modifiers, locking it in place.", "name": "Fracturing Orb", "img_folder": "_poe2" },
+        "vaal": { "desc": "Unpredictably changes the item and prevents the item from being crafted further", "name": "Vaal Orb", "img_folder": "_poe2" }
+    },
+    "actions": {
+        "poe2_lesser_essence": { "name": "Essence", "subname": "Lesser Essences", "desc": "Lesser Essences<div class='mmit'>Upgrades a Magic item to a Rare item, adding a guaranteed modifier</div>", "img": "poe2/Essences/lesser_infinite", "subset": "custom" },
+        "poe2_essence": { "name": "Essence", "subname": "Essences", "desc": "Essences<div class='mmit'>Upgrades a Magic item to a Rare item, adding a guaranteed modifier</div>", "img": "poe2/Essences/essence_infinite", "subset": "custom" },
+        "poe2_greater_essence": { "name": "Essence", "subname": "Greater Essences", "desc": "Greater Essences<div class='mmit'>Upgrades a Magic item to a Rare item, adding a guaranteed modifier</div>", "img": "poe2/Essences/greater_infinite", "subset": "custom" },
+        "poe2_perfect_essence": { "name": "Essence", "subname": "Perfect Essences", "desc": "Perfect Essences<div class='mmit'>Removes a random modifier and augments a Rare item with a new guaranteed modifier</div>", "img": "poe2/Essences/perfect_infinite", "subset": "custom" },
+        "poe2_alloy": { "name": "Alloy", "subname": "Alloys", "desc": "Alloys<div class='mmit'>Removes a random modifier and augments a Rare item with a new guaranteed modifier</div>", "img": "poe2/Essences/the_runefathers_alloy", "subset": "custom" },
+        "poe2_desecration": {
+            "name": "Desecration", "subname": "Desecration", "desc": "Desecration<div class='mmit'>Desecrates an item which allows you to pick between of a choice of 3 desecrated modifiers.</div>", "img": "poe2/Bones/AncientRibs", "subset": {
+                "ancient_collarbone": { "name": "Ancient Collarbone", "img": "poe2/Bones/AncientClavicle", "desc": "Desecrates a Rare Amulet, Ring or Belt<div class='mmit'>Minimum modifier level : 40</div>" },
+                "ancient_jawbone": { "name": "Ancient Jawbone", "img": "poe2/Bones/AncientJawbone", "desc": "Desecrates a Rare Weapon or Quiver<div class='mmit'>Minimum modifier level : 40</div>" },
+                "ancient_ribs": { "name": "Ancient Rib", "img": "poe2/Bones/AncientRibs", "desc": "Desecrates a Rare Armour<div class='mmit'>Minimum modifier level : 40</div>" },
+                "gnawed_collarbone": { "name": "Gnawed Collarbone", "img": "poe2/Bones/GnawedClavicle", "desc": "Desecrates a Rare Amulet, Ring or Belt<div class='mmit'>Maximum item level : 64</div>" },
+                "gnawed_jawbone": { "name": "Gnawed Jawbone", "img": "poe2/Bones/GnawedJawbone", "desc": "Desecrates a Rare Weapon or Quiver<div class='mmit'>Maximum item level : 64</div>" },
+                "gnawed_ribs": { "name": "Gnawed Rib", "img": "poe2/Bones/GnawedRibs", "desc": "Desecrates a Rare Armour<div class='mmit'>Maximum item level : 64</div>" },
+                "preserved_collarbone": { "name": "Preserved Collarbone", "img": "poe2/Bones/PreservedCalvicle", "desc": "Desecrates a Rare Amulet, Ring or Belt" },
+                "preserved_cranium": { "name": "Preserved Cranium", "img": "poe2/Bones/PreservedCranium", "desc": "Desecrates a Rare Jewel" },
+                "preserved_jawbone": { "name": "Preserved Jawbone", "img": "poe2/Bones/PreservedJawbone", "desc": "Desecrates a Rare Weapon or Quiver" },
+                "preserved_ribs": { "name": "Preserved Rib", "img": "poe2/Bones/PreservedRibs", "desc": "Desecrates a Rare Armour" },
+                "preserved_spine": { "name": "Preserved Spine", "img": "poe2/Bones/PreservedSpine", "desc": "Desecrates a Rare Waystone" }
+            }
+        },
+        "poe2_omens": {
+            "name": "Omens", "subname": "Omens", "desc": "Omens", "img": "omens", "subsel": 99999, "subset": {
+                "abyssal_echoes": { "name": "Abyssal Echoes", "img": "poe2/Omens/abyssal_echoes", "desc": "<div class='mmit'>While this item is active in your inventory</div>the next time you reveal Desecrated modifiers you can reroll the options once" },
+                "blackblooded": { "name": "the Blackblooded", "img": "poe2/Omens/blackblooded", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Desecration attempt will guarantee a random Kurgal modifier" },
+                "blessed": { "name": "the Blessed", "img": "poe2/Omens/blessed", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Divine Orb will only reroll Implicit Modifiers" },
+                //"dextral_alchemy": { "name": "Dextral Alchemy", "img": "poe2/Omens/sinistral_alchemy", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Orb of Alchemy will result in the maximum number of suffix modifiers" },
+                "dextral_annulment": { "name": "Dextral Annulment", "img": "poe2/Omens/dextral_annulment", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Orb of Annulment will remove only suffix modifiers" },
+                //"dextral_coronation": { "name": "Dextral Coronation", "img": "poe2/Omens/dextral_coronation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Regal Orb will add only suffix modifiers" },
+                "dextral_crystallisation": { "name": "Dextral Crystallisation", "img": "poe2/Omens/dextral_crystallisation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Perfect or Corrupted Essence will remove only Suffix modifiers" },
+                "dextral_erasure": { "name": "Dextral Erasure", "img": "poe2/Omens/dextral_erasure", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Chaos Orb will remove only suffix modifiers" },
+                "dextral_exaltation": { "name": "Dextral Exaltation", "img": "poe2/Omens/dextral_exaltation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Exalted Orb will add only suffix modifiers" },
+                "dextral_necromancy": { "name": "Dextral Necromancy", "img": "poe2/Omens/dextral_necromancy", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Desecration attempt will add only suffix modifiers" },
+                //"greater_annulment": { "name": "Greater Annulment", "img": "poe2/Omens/greater_annulment", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Annulment Orb will remove two modifiers" },
+                "greater_exaltation": { "name": "Greater Exaltation", "img": "poe2/Omens/greater_exaltation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Exalted Orb will add two random modifiers" },
+                "homogenising_exaltation": { "name": "Homogenising Exaltation", "img": "poe2/Omens/homogenising_exaltation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Exalted Orb will add a Modifier of the same type as an existing Modifier on the Item" },
+                "homogenising_coronation": { "name": "Homogenising Coronation", "img": "poe2/Omens/homogenising_coronation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Regal Orb will add a Modifier of the same type as an existing Modifier on the Item" },
+                "liege": { "name": "the Liege", "img": "poe2/Omens/liege", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Desecration attempt will guarantee a random Amanamu modifier" },
+                "light": { "name": "Light", "img": "poe2/Omens/light", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Orb of Annulment will remove only Desecrated modifiers" },
+                //"sinistral_alchemy": { "name": "Sinistral Alchemy", "img": "poe2/Omens/sinistral_alchemy", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Orb of Alchemy will result in the maximum number of prefix modifiers" },
+                "sinistral_annulment": { "name": "Sinistral Annulment", "img": "poe2/Omens/sinistral_annulment", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Orb of Annulment will remove only prefix modifiers" },
+                //"sinistral_coronation": { "name": "Sinistral Coronation", "img": "poe2/Omens/sinistral_coronation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Regal Orrb will add only prefix modifiers" },
+                "sinistral_crystallisation": { "name": "Sinistral Crystallisation", "img": "poe2/Omens/sinistral_crystallisation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Perfect or Corrupted Essence will remove only Prefix modifiers" },
+                "sinistral_erasure": { "name": "Sinistral Erasure", "img": "poe2/Omens/sinistral_erasure", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Chaos Orb will remove only prefix modifiers" },
+                "sinistral_exaltation": { "name": "Sinistral Exaltation", "img": "poe2/Omens/sinistral_exaltation", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Exalted Orb will add only prefix modifiers" },
+                "sinistral_necromancy": { "name": "Sinistral Necromancy", "img": "poe2/Omens/sinistral_necromancy", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Desecration attempt will add only prefix modifiers" },
+                "sovereign": { "name": "the Sovereign", "img": "poe2/Omens/sovereign", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Desecration attempt will guarantee a random Ulaman modifier" },
+                "whittling": { "name": "Whittling", "img": "poe2/Omens/whittling", "desc": "<div class='mmit'>While this item is active in your inventory</div>your next Chaos Orb will remove the lowest level modifier" },
+            }, "img_folder": "_poe2"
+        },
+        "poe2_runes": { "name": "Runes", "subname": "Runes", "desc": "Runes<div class='mmit'>Can be added to gear sockets</div>", "img": "runes", "subset": "custom", "img": "poe2/Runes/desert" },
+        "poe2_cores": { "name": "Soul Cores", "subname": "Soul Cores", "desc": "Soul Cores<div class='mmit'>Can be added to gear sockets</div>", "img": "runes", "subset": "custom", "img": "poe2/Cores/zantipi" },
+        "poe2_talismans": { "name": "Talismans", "subname": "Talismans", "desc": "Talismans<div class='mmit'>Can be added to gear sockets</div>", "img": "runes", "subset": "custom", "img": "poe2/Talisman/bear" },
+        "catalyst": { "name": "Catalyst", "subname": "Catalysts", "desc": "Catalysts", "img": "poe2/Catalysts/catalyst_3", "subset": "custom" },
+        "refined_catalyst": { "name": "Refined Catalyst", "subname": "Refined Catalysts", "desc": "Refined Catalysts", "img": "poe2/Catalysts/catalyst_3", "subset": "custom" }
+    }
+};
+
+poe2_special_essences = ["Essence of Horror", "Essence of Insanity", "Essence of Delirium", "Essence of Hysteria", "Essence of the Abyss", "Essence of the Breach"];
+poe2_skip_essences = [];
+
+crsim_catadesc = {
+    1: "Adds quality that enhances Attribute modifiers on a ring or amulet, Replaces other quality types",
+    2: "Adds quality that enhances Attack modifiers on a ring or amulet, Replaces other quality types",
+    3: "Adds quality that enhances Lightning modifiers on a ring or amulet, Replaces other quality types",
+    4: "Adds quality that enhances Life modifiers on a ring or amulet, Replaces other quality types",
+    5: "Adds quality that enhances Caster modifiers on a ring or amulet, Replaces other quality types",
+    6: "Adds quality that enhances Defence modifiers on a ring or amulet, Replaces other quality types",
+    7: "Adds quality that enhances Fire modifiers on a ring or amulet, Replaces other quality types",
+    8: "Adds quality that enhances Speed modifiers on a ring or amulet, Replaces other quality types",
+    9: "Adds quality that enhances Mana modifiers on a ring or amulet, Replaces other quality types",
+    10: "Adds quality that enhances Chaos modifiers on a ring or amulet, Replaces other quality types",
+    11: "Adds quality that enhances Cold modifiers on a ring or amulet, Replaces other quality types",
+    12: "Adds quality that enhances Physical modifiers on a ring or amulet, Replaces other quality types",
+    13: "Adds quality that enhances Minion modifiers on a ring or amulet, Replaces other quality types"
+};
+
+crsim_catlbls = {
+    1: "Attribute",
+    2: "Attack",
+    3: "Lightning",
+    4: "Life",
+    5: "Caster",
+    6: "Defense",
+    7: "Fire",
+    8: "Speed",
+    9: "Mana",
+    10: "Chaos",
+    11: "Cold",
+    12: "Physical",
+    13: "Minion"
+};
+
+simulator_presets = [];
+
+/* SIMULATOR */
+poec_cmethods = {
+    "currency": { // BASIC METHODS
+        "name": "Basic currency",
+        "img": "method_multi",
+        "subset": {
+            "transmute": {
+                "desc": "Upgrades a normal item to a magic item with 1 modifier",
+                "name": "Orb of Transmutation",
+                "plural": "Orbs of Transmutation",
+                "psing": "an",
+                "img": "poe2/method_transmute",
+                "rarity": "magic",
+                "required": {
+                    "rarity": "normal"
+                },
+                "subset": {
+                    "transmute_normal": {
+                        "desc": "Upgrades a normal item to a magic item with 1 modifier",
+                        "name": "Orb of Transmutation",
+                        "plural": "Orbs of Transmutation",
+                        "psing": "an",
+                        "img": "poe2/method_transmute",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "normal"
+                        }
+                    },
+                    "transmute_greater": {
+                        "desc": "Upgrades a normal item to a magic item with 1 modifier of minimum level 55",
+                        "name": "Greater Orb of Transmutation",
+                        "plural": "Greater Orbs of Transmutation",
+                        "psing": "an",
+                        "img": "poe2/method_transmute",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "normal"
+                        }
+                    },
+                    "transmute_perfect": {
+                        "desc": "Upgrades a normal item to a magic item with 1 modifier of minimum level 70",
+                        "name": "Perfect Orb of Transmutation",
+                        "plural": "Perfect Orbs of Transmutation",
+                        "psing": "an",
+                        "img": "poe2/method_transmute",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "normal"
+                        }
+                    }
+                }
+            },
+            "augmentation": {
+                "desc": "Augments a magic item with a new random modifier",
+                "name": "Orb of Augmentation",
+                "plural": "Orbs of Augmentation",
+                "psing": "an",
+                "img": "poe2/method_augmentation",
+                "required": {
+                    "rarity": "magic",
+                    "open": "any"
+                },
+                "subset": {
+                    "augmentation_normal": {
+                        "desc": "Augments a magic item with a new random modifier",
+                        "name": "Orb of Augmentation",
+                        "plural": "Orbs of Augmentation",
+                        "psing": "an",
+                        "img": "poe2/method_augmentation",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "magic",
+                            "open": "any"
+                        },
+                    },
+                    "augmentation_greater": {
+                        "desc": "Augments a magic item with a new random modifier of minimum level 55",
+                        "name": "Greater Orb of Augmentation",
+                        "plural": "Greater Orbs of Augmentation",
+                        "psing": "an",
+                        "img": "poe2/method_augmentation",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "magic",
+                            "open": "any"
+                        },
+                    },
+                    "augmentation_perfect": {
+                        "desc": "Augments a magic item with a new random modifier of minimum level 70",
+                        "name": "Perfect Orb of Augmentation",
+                        "plural": "Perfect Orbs of Augmentation",
+                        "psing": "an",
+                        "img": "poe2/method_augmentation",
+                        "rarity": "magic",
+                        "required": {
+                            "rarity": "magic",
+                            "open": "any"
+                        },
+                    }
+                }
+            },
+            "regal": {
+                "desc": "Upgrades a magic item to a rare item, adding 1 modifier",
+                "name": "Regal Orb",
+                "plural": "Regal Orbs",
+                "rarity": "rare",
+                "img": "poe2/method_regal",
+                "required": {
+                    "rarity": "magic",
+                    "flags": ["is_rare"]
+                },
+                "subset": {
+                    "regal_normal": {
+                        "desc": "Upgrades a magic item to a rare item, adding 1 modifier",
+                        "name": "Regal Orb",
+                        "plural": "Regal Orbs",
+                        "rarity": "rare",
+                        "img": "poe2/method_regal",
+                        "required": {
+                            "rarity": "magic",
+                            "flags": ["is_rare"]
+                        }
+                    },
+                    "regal_greater": {
+                        "desc": "Upgrades a magic item to a rare item, adding 1 modifier of minimum level 35",
+                        "name": "Greater Regal Orb",
+                        "plural": "Greater Regal Orbs",
+                        "rarity": "rare",
+                        "img": "poe2/method_regal",
+                        "required": {
+                            "rarity": "magic",
+                            "flags": ["is_rare"]
+                        }
+                    },
+                    "regal_perfect": {
+                        "desc": "Upgrades a magic item to a rare item, adding 1 modifier of minimum level 50",
+                        "name": "Perfect Regal Orb",
+                        "plural": "Perfect Regal Orbs",
+                        "rarity": "rare",
+                        "img": "poe2/method_regal",
+                        "required": {
+                            "rarity": "magic",
+                            "flags": ["is_rare"]
+                        }
+                    }
+                }
+            },
+            "poe2_alchemy": {
+                "desc": "Upgrades a Normal or Magic item to a Rare item with 4 random modifiers",
+                "name": "Orb of Alchemy",
+                "plural": "Orbs of Alchemy",
+                "psing": "an",
+                "rarity": "rare",
+                "img": "poe2/method_alchemy",
+                "required": {
+                    "flags": ["is_rare"]
+                },
+                "cannot": {
+                    "rarity": "rare"
+                }
+            },
+            "chaos": {
+                "desc": "Removes a random modifier and augments a Rare item with a new random modifier",
+                "name": "Chaos Orb",
+                "plural": "Chaos Orbs",
+                "img": "poe2/method_chaos",
+                "required": {
+                    "rarity": "rare",
+                    "flags": ["is_rare"]
+                },
+                "subset": {
+                    "chaos_normal": {
+                        "desc": "Removes a random modifier and augments a Rare item with a new random modifier",
+                        "name": "Chaos Orb",
+                        "plural": "Chaos Orbs",
+                        "img": "poe2/method_chaos",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"]
+                        }
+                    },
+                    "chaos_greater": {
+                        "desc": "Removes a random modifier and augments a Rare item with a new random modifier of minimum level 35",
+                        "name": "Greater Chaos Orb",
+                        "plural": "Greater Chaos Orbs",
+                        "img": "poe2/method_chaos",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"]
+                        }
+                    },
+                    "chaos_perfect": {
+                        "desc": "Removes a random modifier and augments a Rare item with a new random modifier of minimum level 50",
+                        "name": "Perfect Chaos Orb",
+                        "plural": "Perfect Chaos Orbs",
+                        "img": "poe2/method_chaos",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"]
+                        }
+                    }
+                }
+            },
+            "exalted": {
+                "desc": "Enchants a rare item with a new random modifier",
+                "name": "Exalted Orb",
+                "plural": "Exalted Orbs",
+                "psing": "an",
+                "img": "poe2/method_exalted",
+                "required": {
+                    "rarity": "rare",
+                    "flags": ["is_rare"],
+                    "open": "any"
+                },
+                "subset": {
+                    "exalted_normal": {
+                        "desc": "Enchants a rare item with a new random modifier",
+                        "name": "Exalted Orb",
+                        "plural": "Exalted Orbs",
+                        "psing": "an",
+                        "img": "poe2/method_exalted",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"],
+                            "open": "any"
+                        }
+                    },
+                    "exalted_greater": {
+                        "desc": "Enchants a rare item with a new random modifier of minimum level 35",
+                        "name": "Greater Exalted Orb",
+                        "plural": "Greater Exalted Orbs",
+                        "psing": "an",
+                        "img": "poe2/method_exalted",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"],
+                            "open": "any"
+                        }
+                    },
+                    "exalted_perfect": {
+                        "desc": "Enchants a rare item with a new random modifier of minimum level 55",
+                        "name": "Perfect Exalted Orb",
+                        "plural": "Perfect Exalted Orbs",
+                        "psing": "an",
+                        "img": "poe2/method_exalted",
+                        "required": {
+                            "rarity": "rare",
+                            "flags": ["is_rare"],
+                            "open": "any"
+                        }
+                    }
+                }
+            },
+            "annul": {
+                "desc": "Removes a random modifier from an item",
+                "name": "Orb of Annulment",
+                "plural": "Orbs of Annulment",
+                "psing": "an",
+                "img": "poe2/method_annul",
+                "required": {
+                    "affixes": 1
+                },
+                "cannot": {
+                    "rarity": "normal"
+                }
+            },
+            "divine": {
+                "desc": "Randomises the numeric values of the random properties on an item",
+                "name": "Divine Orb",
+                "plural": "Divine Orbs",
+                "img": "poe2/method_divine",
+                "required": {
+                    "affixes": 1
+                },
+                "cannot": {
+                    "rarity": "normal"
+                }
+            },
+            "fracturing": {
+                "desc": "Fracture a random modifier on a rare item with at least 4 modifiers, locking it in place",
+                "name": "Fracturing Orb",
+                "plural": "Fracturing Orbs",
+                "img": "poe2/method_fracturing",
+                "required": {
+                    "flags": ["is_rare"]
+                },
+                "cannot": {
+                    "fractured": true
+                }
+            },
+            "vaal": {
+                "desc": "Corrupts an item, modifying it unpredictably",
+                "name": "Vaal Orb",
+                "plural": "Vaal Orbs",
+                "img": "poe2/method_vaal",
+                "cannot": {
+                    "bgroup": "|10|13|14|"
+                }
+            }
+        }
+    },
+    "poe2_lesser_essence": { // LESSER ESSENCE CRAFTING
+        "name": "Lesser Essence",
+        "plural": "Lesser Essences",
+        "subname": "Lesser Essences",
+        "desc": "Lesser Essences",
+        "img": "poe2/Essences/lesser_infinite",
+        "subset": "custom",
+        "subsim": "poe2_lesser_essence",
+        "required": {
+            "rarity": "magic",
+            "flags": ["is_magic", "is_essence"]
+        },
+        "cannot": {
+            "meta": true
+        }
+    },
+    "poe2_essence": { // LESSER ESSENCE CRAFTING
+        "name": "Essence",
+        "plural": "Essences",
+        "subname": "Essences",
+        "desc": "Essences",
+        "img": "poe2/Essences/essence_infinite",
+        "subset": "custom",
+        "subsim": "poe2_essence",
+        "required": {
+            "rarity": "magic",
+            "flags": ["is_magic", "is_essence"]
+        },
+        "cannot": {
+            "meta": true
+        }
+    },
+    "poe2_greater_essence": { // GREATER ESSENCE CRAFTING
+        "name": "Greater Essence",
+        "plural": "Greater Essences",
+        "subname": "Greater Essences",
+        "desc": "Greater Essences",
+        "img": "poe2/Essences/greater_infinite",
+        "subset": "custom",
+        "subsim": "poe2_greater_essence",
+        "required": {
+            "rarity": "magic",
+            "flags": ["is_magic", "is_essence"]
+        },
+        "cannot": {
+            "meta": true
+        }
+    },
+    "poe2_perfect_essence": { // PERFECT ESSENCE CRAFTING
+        "name": "Perfect Essence",
+        "plural": "Perfect Essences",
+        "subname": "Perfect Essences",
+        "desc": "Perfect Essences",
+        "img": "poe2/Essences/perfect_infinite",
+        "subset": "custom",
+        "subsim": "poe2_perfect_essence",
+        "required": {
+            "rarity": "rare",
+            "flags": ["is_rare", "is_essence"]
+        },
+        "cannot": {
+            "meta": true
+        }
+    },
+    "poe2_desecration": {
+        "name": "Desecration",
+        "plural": "Desecrations",
+        "subname": "Desecrations",
+        "desc": "Desecrations",
+        "img": "poe2/Bones/AncientRibs",
+        "required": {
+            "bgroup": poec_constants["constraints"]["veil_bgroups"],
+            "rarity": "rare",
+            "flags": ["is_rare"]
+        },
+        "subset": {
+            "ancient_collarbone": {
+                "name": "Ancient Collarbone",
+                "plural": "Ancient Collarbones",
+                "img": "poe2/Bones/AncientClavicle",
+                "desc": "Desecrates a Rare Amulet, Ring or Belt with a minimum modifier level of 40",
+                "required": {
+                    "bgroup": "|1|"
+                }
+            },
+            "ancient_jawbone": {
+                "name": "Ancient Jawbone",
+                "plural": "Ancient Jawbones",
+                "img": "poe2/Bones/AncientJawbone",
+                "desc": "Desecrates a Rare Weapon or Quiver with a minimum modifier level of 40",
+                "required": {
+                    "base": poe2_jawbone_bases
+                }
+            },
+            "ancient_ribs": {
+                "name": "Ancient Rib",
+                "plural": "Ancient Ribs",
+                "img": "poe2/Bones/AncientRibs",
+                "desc": "Desecrates a Rare Armour with a minimum modifier level of 40",
+                "required": {
+                    "base": poe2_rib_bases
+                }
+            },
+            "gnawed_collarbone": {
+                "name": "Gnawed Collarbone",
+                "plural": "Gnawed Collarbones",
+                "img": "poe2/Bones/GnawedClavicle",
+                "desc": "Desecrates a Rare Amulet, Ring or Belt with a maximum item level of 64",
+                "required": {
+                    "bgroup": "|1|",
+                    "maxlvl": 64
+                }
+            },
+            "gnawed_jawbone": {
+                "name": "Gnawed Jawbone",
+                "plural": "Gnawed Jawbones",
+                "img": "poe2/Bones/GnawedJawbone",
+                "desc": "Desecrates a Rare Weapon or Quiver with a maximum item level of 64",
+                "required": {
+                    "base": poe2_jawbone_bases,
+                    "maxlvl": 64
+                }
+            },
+            "gnawed_ribs": {
+                "name": "Gnawed Rib",
+                "plural": "Gnawed Ribs",
+                "img": "poe2/Bones/GnawedRibs",
+                "desc": "Desecrates a Rare Armour with a maximum item level of 64",
+                "required": {
+                    "base": poe2_rib_bases,
+                    "maxlvl": 64
+                }
+            },
+            "preserved_collarbone": {
+                "name": "Preserved Collarbone",
+                "plural": "Preserved Collarbones",
+                "img": "poe2/Bones/PreservedCalvicle",
+                "desc": "Desecrates a Rare Amulet, Ring or Belt",
+                "required": {
+                    "bgroup": "|1|"
+                }
+            },
+            "preserved_cranium": {
+                "name": "Preserved Cranium",
+                "plural": "Preserved Craniums",
+                "img": "poe2/Bones/PreservedCranium",
+                "desc": "Desecrates a Rare Jewel",
+                "required": {
+                    "bgroup": "|9|"
+                }
+            },
+            "preserved_jawbone": {
+                "name": "Preserved Jawbone",
+                "plural": "Preserved Jawbones",
+                "img": "poe2/Bones/PreservedJawbone",
+                "desc": "Desecrates a Rare Weapon or Quiver",
+                "required": {
+                    "base": poe2_jawbone_bases
+                }
+            },
+            "preserved_ribs": {
+                "name": "Preserved Rib",
+                "plural": "Preserved Ribs",
+                "img": "poe2/Bones/PreservedRibs",
+                "desc": "Desecrates a Rare Armour",
+                "required": {
+                    "base": poe2_rib_bases
+                }
+            },
+            "preserved_spine": {
+                "name": "Preserved Spine",
+                "plural": "Preserved Spines",
+                "img": "poe2/Bones/PreservedSpine",
+                "desc": "Desecrates a Rare Waystone",
+                "required": {
+                    "bgroup": "|11|"
+                }
+            }
+        }
+    },
+    "poe2_omens_toggle": {
+        "name": "Omens",
+        "plural": "Omens",
+        "subname": "Omens",
+        "desc": "Omens",
+        "img": "poe2/Omens/whittling",
+        "subset": {
+            "abyssal_echoes": {
+                "name": "Abyssal Echoes",
+                "img": "poe2/Omens/abyssal_echoes"
+            },
+            "blackblooded": {
+                "name": "the Blackblooded",
+                "img": "poe2/Omens/blackblooded"
+            },
+            "blessed": {
+                "name": "the Blessed",
+                "img": "poe2/Omens/blessed"
+            },
+            /*
+            "dextral_alchemy": {
+                "name": "Dextral Alchemy",
+                "img": "poe2/Omens/dextral_alchemy"
+            },
+            */
+            "dextral_annulment": {
+                "name": "Dextral Annulment",
+                "img": "poe2/Omens/dextral_annulment"
+            },
+            /*
+            "dextral_coronation": {
+                "name": "Dextral Coronation",
+                "img": "poe2/Omens/dextral_coronation"
+            },
+            */
+            "dextral_crystallisation": {
+                "name": "Dextral Crystallisation",
+                "img": "poe2/Omens/dextral_crystallisation"
+            },
+            "dextral_erasure": {
+                "name": "Dextral Erasure",
+                "img": "poe2/Omens/dextral_erasure"
+            },
+            "dextral_exaltation": {
+                "name": "Dextral Exaltation",
+                "img": "poe2/Omens/dextral_exaltation"
+            },
+            "dextral_necromancy": {
+                "name": "Dextral Necromancy",
+                "img": "poe2/Omens/dextral_necromancy"
+            },
+            /*
+            "greater_annulment": {
+                "name": "Greater Annulment",
+                "img": "poe2/Omens/greater_annulment"
+            },
+            */
+            "greater_exaltation": {
+                "name": "Greater Exaltation",
+                "img": "poe2/Omens/greater_exaltation"
+            },
+            "homogenising_exaltation": {
+                "name": "Homogenising Exaltation",
+                "img": "poe2/Omens/homogenising_exaltation"
+            },
+            "homogenising_coronation": {
+                "name": "Homogenising Coronation",
+                "img": "poe2/Omens/homogenising_coronation"
+            },
+            "liege": {
+                "name": "the Liege",
+                "img": "poe2/Omens/liege"
+            },
+            "light": {
+                "name": "Light",
+                "img": "poe2/Omens/light"
+            },
+            /*
+            "sinistral_alchemy": {
+                "name": "Sinistral Alchemy",
+                "img": "poe2/Omens/sinistral_alchemy"
+            },
+            */
+            "sinistral_annulment": {
+                "name": "Sinistral Annulment",
+                "img": "poe2/Omens/sinistral_annulment"
+            },
+            /*
+            "sinistral_coronation": {
+                "name": "Sinistral Coronation",
+                "img": "poe2/Omens/sinistral_coronation"
+            },
+            */
+            "sinistral_crystallisation": {
+                "name": "Sinistral Crystallisation",
+                "img": "poe2/Omens/sinistral_crystallisation"
+            },
+            "sinistral_erasure": {
+                "name": "Sinistral Erasure",
+                "img": "poe2/Omens/sinistral_erasure"
+            },
+            "sinistral_exaltation": {
+                "name": "Sinistral Exaltation",
+                "img": "poe2/Omens/sinistral_exaltation"
+            },
+            "sinistral_necromancy": {
+                "name": "Sinistral Necromancy",
+                "img": "poe2/Omens/sinistral_necromancy"
+            },
+            "sovereign": {
+                "name": "the Sovereign",
+                "img": "poe2/Omens/sovereign"
+            },
+            "whittling": {
+                "name": "Whittling",
+                "img": "poe2/Omens/whittling"
+            }
+        }
+    },
+    "catalyst": { // CATALYSTS
+        "name": "Catalyst",
+        "plural": "Catalysts",
+        "subname": "Catalysts",
+        "desc": "Catalysts",
+        "img": "poe2/Catalysts/catalyst_3",
+        "subset": "custom",
+        "subsim": "catalysts",
+        "required": {
+            "bgroup": "|9|1|",
+            "flags": ["is_catalyst"]
+        },
+        "cannot": {
+            "base": "|3|"
+        }
+    },
+    "check": { // CONDITION CHECK
+        "name": "Condition check",
+        "desc": "",
+        "img": "key",
+        "noemu": true
+    },
+    "modunveil": {
+        "name": "Reveal modifier",
+        "desc": "",
+        "img": "poe2/smlinf_10",
+        "required": {
+            "bgroup": poec_constants["constraints"]["veil_bgroups"]
+        },
+        "options": [
+            { "type": "check", "id": "udnpm", "name": "Do not pick a mod on fail", "default": false }
+        ],
+        "noemu": true
+    }
+}
+
+simulator_veiled_affixes = { "prefix": { 10: [], 1: [] }, "suffix": { 10: [], 1: [] } };
+simulator_veiled_modgroups = [10, 1];
+simulator_veiled_term = "Unrevealed";
+
+socketable_title_by_type = {
+    "weapons": "Martial Weapons",
+    "armour": "Armour",
+    "caster": "Caster Weapons",
+    "all": "All Equipment",
+    "class": null
+}
+
+var addPoe2Probs = [
+    { "p": 2, "s": 1, "w": 0.5, "f": "(1/2)" },
+    { "p": 1, "s": 2, "w": 0.5, "f": "(1/2)" }
+];
+
+/*
+Add an Enchantment
+Reroll up to 3 modifiers
+Add a socket, ignoring the Socket Limit
+Break the item
+*/
+var crsim_poe2vaaltbl = ["add socket", "implicit", "brick", "nothing"];
+
+function parseEssenceForImage(essence) {
+    essence = essence.toLowerCase();
+    essence = essence.replace(/ /g, "_");
+    essence = essence.replace(/'/g, "");
+    essence = essence.replace("_essence_of_the", "");
+    essence = essence.replace("_essence_of", "");
+    essence = essence.replace("essence_of_the_", "essence_");
+    essence = essence.replace("essence_of_", "essence_");
+    return essence;
+}
+
+/* Emulator socketable item description */
+function buildSocketableModDescription(socketable) {
+    let mods = JSON.parse(socketable.mods);
+    let desc = "";
+    let byMod = {};
+    $.each(socketable_title_by_type, function (key, label) {
+        if (mods[key]) {
+            if (Array.isArray(mods[key])) {
+                $.each(mods[key], function (index, entry) {
+                    if (entry.mod && poecd.modifiers.ind[entry.mod] && poecd.modifiers.seq[poecd.modifiers.ind[entry.mod]]) {
+                        let mod = poecd.modifiers.seq[poecd.modifiers.ind[entry.mod]];
+                        let modName = mod.name_modifier.replace(/\\n/, "<br>");
+                        if (byMod[modName] == undefined) byMod[modName] = [];
+                        if (entry.bgroup) {
+                            byMod[modName].push(poecl.bgroup[entry.bgroup]);
+                            //desc += "<div><div class='mmit'>" + poecl.bgroup[entry.bgroup] + "</div>" + mod.name_modifier.replace(/\\n/, "<br>") + "</div>";
+                        } else {
+                            $.each(entry.bases, function (baseIndex, baseId) {
+                                byMod[modName].push(poecl.base[baseId]);
+                                //desc += "<div><div class='mmit'>" + poecl.base[baseId] + "</div>" + mod.name_modifier.replace(/\\n/, "<br>") + "</div>";
+                            });
+                        }
+                    }
+                });
+            } else {
+                if (poecd.modifiers.ind[mods[key]] && poecd.modifiers.seq[poecd.modifiers.ind[mods[key]]]) {
+                    let mod = poecd.modifiers.seq[poecd.modifiers.ind[mods[key]]];
+                    let modName = mod.name_modifier.replace(/\\n/, "<br>");
+                    if (byMod[modName] == undefined) byMod[modName] = [];
+                    byMod[modName].push(label);
+                    //desc += "<div><div class='mmit'>" + label + "</div>" + mod.name_modifier.replace(/\\n/, "<br>") + "</div>";
+                }
+            }
+        }
+    });
+    $.each(byMod, function (modName, bases) {
+        desc += "<div><div class='mmit'>" + bases.join(", ") + "</div>" + modName + "</div>";
+    });
+    return desc;
+}
+
+class poe2Item {
+    #raw = null;
+    #blocks = null;
+    #rarity = null;
+    #base = null;
+    #level = null;
+    #corrupted = null;
+    #requirements = null;
+    #runes = null;
+    #socketed = [];
+    #sockets = null;
+    #affixes = null;
+    #note = null;
+    #implicits = null;
+    #quality = null;
+    #baseItemId = null;
+    #baseId = null;
+    #unrevealed = [];
+    #fractured = {};
+    #desecrated = {};
+    #built = {};
+    #values = {};
+    #modifiers = [];
+    #errors = [];
+
+    constructor(paste = null) {
+        this.#raw = paste;
+        if (paste) {
+            this.parseItemPaste();
+        }
+    }
+
+    get errors() {
+        return this.#errors;
+    }
+
+    get sockets() {
+        return this.#sockets;
+    }
+
+    get implicits() {
+        return this.#implicits;
+    }
+
+    get quality() {
+        return this.#quality;
+    }
+
+    get values() {
+        return this.#values;
+    }
+
+    get level() {
+        return this.#level;
+    }
+
+    get baseItemId() {
+        return this.#baseItemId;
+    }
+
+    get baseId() {
+        return this.#baseId;
+    }
+
+    get socketed() {
+        return this.#socketed;
+    }
+
+    get fractured() {
+        return this.#fractured;
+    }
+
+    get built() {
+        return this.#built;
+    }
+
+    get modifiers() {
+        return this.#modifiers;
+    }
+
+    get unrevealed() {
+        return this.#unrevealed;
+    }
+
+    get desecrated() {
+        return this.#desecrated;
+    }
+
+    get rarity() {
+        return this.#rarity.toLowerCase();
+    }
+
+    get corrupted() {
+        return (this.#corrupted) ? 1 : 0;
+    }
+
+    set raw(paste = null) {
+        this.#raw = paste;
+    }
+
+    set blocks(blocks) {
+        this.#blocks = blocks;
+    }
+
+    parseBlock(block) {
+        let blockLines = poec_removeArrEmpty(block.split("\n"));
+        let thisObject = this;
+
+        // Check for corruption
+        if (this.#corrupted == null) {
+            $.each(blockLines, function (lineIndex, lineData) {
+                if (lineData == "Corrupted") {
+                    thisObject.#corrupted = true;
+                    return;
+                }
+            });
+        }
+
+        // Requirements
+        if (this.#requirements == null && (block.indexOf("Requirements:") > -1 || block.indexOf("Requires:") > -1)) {
+            this.#requirements = this.parseRequirements(block);
+            return;
+        }
+
+        // Runes
+        if (this.#runes == null && block.indexOf("(rune)") > -1) {
+            this.#runes = blockLines;
+            return;
+        }
+
+        // Sockets
+        if (this.#sockets == null && block.indexOf("Sockets:") > -1) {
+            let socketInfo = block.split(":");
+            this.#sockets = socketInfo[1].split("S").length - 1;
+            return;
+        }
+
+        // Item level
+        if (this.#level == null && block.indexOf("Item Level:") > -1) {
+            let itemLevel = block.split(":");
+            this.#level = parseInt(itemLevel[1].trim());
+            return;
+        }
+
+        // Affixes
+        if (this.#affixes == null && (block.indexOf("Suffix Modifier") > -1 || block.indexOf("Prefix Modifier") > -1)) {
+            this.#affixes = this.parseAffixes(blockLines);
+            return;
+        }
+
+        // Note
+        if (this.#note == null && block.indexOf("Note:") > -1) {
+            let note = block.split(":");
+            this.#note = note[1];
+            return;
+        }
+
+        // Quality
+        if (this.#quality == null && block.indexOf("Quality:") > -1) {
+            $.each(blockLines, function (index, line) {
+                if (line.indexOf("Quality:") > -1) {
+                    var matches = line.match(/([0-9]+)/gm);
+                    thisObject.#quality = parseInt(matches[0]);
+                }
+            });
+            return;
+        }
+
+        // Implicits
+        if (this.#implicits == null && (block.indexOf("Implicit Modifier") > -1 || block.indexOf("(implicit)") > -1)) {
+            this.#implicits = blockLines;
+            return;
+        }
+    }
+
+    parseItemPaste(paste = null) {
+        if (paste) this.raw = raw(paste);
+        this.blocks = (this.#raw.split("--------"));
+
+        // Base data is always first block
+        let baseData = poec_removeArrEmpty(this.#blocks[0].split("\n"));
+
+        // Rarity
+        let thisObject = this;
+        $.each(baseData, function (lineIndex, line) {
+            if (line.indexOf("Rarity:") > -1) {
+                thisObject.#rarity = line.split(":");
+                thisObject.#rarity = thisObject.#rarity[1].trim();
+            }
+        });
+        if (!this.#rarity) {
+            this.#rarity = baseData[1].split(":");
+            this.#rarity = this.#rarity[1].trim();
+        }
+
+        // Base info
+        let baseLines = baseData.length;
+        let nameLine = (baseLines == 3) ? 2 : 3;
+        this.#base = baseData[nameLine].trim();
+
+        // Parse blocks
+        for (var blockIndex = 1; blockIndex < this.#blocks.length; blockIndex++) {
+            this.parseBlock(this.#blocks[blockIndex]);
+        }
+
+        // Parse base
+        this.parseBase();
+
+        // Parse modifiers
+        this.parseModifiers();
+
+        // Parse runes
+        this.parseSocketables();
+    }
+
+    findBaseByName() {
+        if (poecd["bitems"]["name"][this.#base]) {
+            return poecd["bitems"]["name"][this.#base];
+        }
+
+        if (poecd["bitems"]["name"][this.#base] == undefined && this.#rarity == "Normal") {
+            this.#base = this.#base.replace("Superior ", "");
+            return poecd["bitems"]["name"][this.#base];
+        }
+
+        if (poecd["bitems"]["name"][this.#base] == undefined && this.#rarity == "Magic") {
+            if (this.#base.indexOf(" of ") > -1) {
+                // Magic suffix
+                this.#base = this.#base.split(" of ");
+                this.#base = this.#base[0].trim();
+            }
+
+            if (poecd["bitems"]["name"][this.#base] == undefined) {
+                // Remove first word and retry (magic prefix)
+                var words = this.#base.split(" ");
+                this.#base = this.#base.replace(words[0] + " ", "");
+            }
+
+            if (poecd["bitems"]["name"][this.#base] == undefined) {
+                // Remove second word and retry (magic prefix)
+                var words = this.#base.split(" ");
+                this.#base = this.#base.replace(words[0] + " ", "");
+            }
+
+            return poecd["bitems"]["name"][this.#base];
+        }
+
+        return null;
+    }
+
+    parseBase() {
+        if (this.#rarity == "Unique") {
+            return;
+        }
+
+        let baseItemId = this.findBaseByName();
+
+        if (baseItemId == null) {
+            return;
+        }
+
+        let useBase = poecd["bitems"]["name"][this.#base];
+
+        if (Array.isArray(useBase)) {
+            // Base has multiple name matches, compare requirements
+            var checking = [];
+            if (this.#requirements.intelligence) {
+                checking.push({ "what": "intelligence", "with": this.#requirements.intelligence });
+            }
+            if (this.#requirements.strength) {
+                checking.push({ "what": "strength", "with": this.#requirements.strength });
+            }
+            if (this.#requirements.dexterity) {
+                checking.push({ "what": "strength", "with": this.#requirements.strength });
+            }
+
+            let foundbase = null;
+            $.each(useBase, function (index, baseId) {
+                let baseDetails = poecd["bitems"]["seq"][baseId];
+                let requirements = JSON.parse(baseDetails["requirements"]);
+                let checks = 0;
+                $.each(checking, function (checkIndex, checkDetails) {
+                    $.each(requirements, function (checkWhat, checkWith) {
+                        if (checkDetails["what"] == checkWhat && checkDetails["with"] == checkWith) {
+                            checks++;
+                        }
+                    });
+                });
+                if (checks >= checking.length) {
+                    foundBase = baseId;
+                    return;
+                }
+            });
+
+            if (foundbase) {
+                useBase = foundBase;
+            } else {
+                // Could not figure out base, use first
+                useBase = useBase[0];
+            }
+        }
+
+        // Set base item
+        var baseData = poecd["bitems"]["seq"][useBase];
+        this.#baseItemId = parseInt(baseData["id_bitem"]);
+        this.#baseId = parseInt(baseData["id_base"]);
+    }
+
+    parseAffixes(lines) {
+        let affixes = [];
+        let currentAffix = -1;
+        $.each(lines, function (index, line) {
+            if (line[0] == "{") {
+                // New affix
+                currentAffix++;
+                affixes.push({
+                    "advancedLine": line,
+                    "modifierName": null,
+                    "invertedModifierName": null,
+                    "fractured": false,
+                    "desecrated": false
+                });
+            } else {
+                // Affix details
+                if (line.indexOf("(fractured)") > -1) {
+                    affixes[currentAffix]["fractured"] = true;
+                }
+                if (line.indexOf("(desecrated)") > -1) {
+                    affixes[currentAffix]["desecrated"] = true;
+                }
+                // Filter out stuff
+                var modifierName = line.replace(" — Unscalable Value", "").trim();
+                modifierName = line.replace(" (fractured)", "").trim();
+                modifierName = line.replace(" (desecrated)", "").trim();
+                // Build hybrids
+                if (affixes[currentAffix]["modifierName"] == null) {
+                    affixes[currentAffix]["modifierName"] = modifierName;
+                    affixes[currentAffix]["invertedModifierName"] = modifierName;
+                } else {
+                    affixes[currentAffix]["modifierName"] += ", " + modifierName;
+                    affixes[currentAffix]["invertedModifierName"] = modifierName + ", " + affixes[currentAffix]["invertedModifierName"];
+                }
+            }
+        });
+
+        // Clean out invalid things
+        var cleanedAffixes = [];
+        $.each(affixes, function (index, affix) {
+            if (affix.advancedLine != "{ Unique Modifier }") {
+                cleanedAffixes.push(affix);
+            }
+        });
+
+        return cleanedAffixes;
+    }
+
+    parseRequirements(text) {
+        let splitData = text.split(":");
+        let information = splitData[1].split(", ");
+
+        let requirements = { "level": null, "intelligence": null, "dexterity": null, "strength": null };
+        $.each(information, function (index, data) {
+            if (data.indexOf("Level") > -1) {
+                requirements.level = parseInt(data.replace("Level ", ""));
+                return;
+            }
+            data = data.replace("(augmented) ", "");
+            splitData = data.split(" ");
+            let value = parseInt(splitData[0]);
+            if (splitData[1].indexOf("Int") > -1) {
+                requirements.intelligence = value;
+                return;
+            }
+            if (splitData[1].indexOf("Str") > -1) {
+                requirements.strength = value;
+                return;
+            }
+            if (splitData[1].indexOf("Dex") > -1) {
+                requirements.dexterity = value;
+                return;
+            }
+        });
+
+        return requirements;
+    }
+
+    parseModifiers() {
+        var rrep = /\((\S*)\)/gm;
+        var vrep = / ,/gm;
+
+        let thisObject = this;
+
+        $.each(this.#affixes, function (index, affix) {
+            let modifier = {
+                "atype": null,
+                "mgrp": 1,
+                "notable": false,
+                "id": null,
+                "tier": null
+            };
+
+            let matches = affix.advancedLine.match(/"(.*)"/gm);
+            if (matches) {
+                switch (matches[0].replace(/"/g, "")) {
+                    case 'of Kurgal': case 'Kurgal\'s': modifier.mgrp = 10; break;
+                    case 'of Amanamu': case 'Amanamu\'s': modifier.mgrp = 10; break;
+                    case 'of Ulaman': case 'Ulaman\'s': modifier.mgrp = 10; break;
+                    case 'of the Essence': case 'Essences': modifier.mgrp = 13; break;
+                    default: break;
+                }
+            }
+
+            modifier.atype = (affix.advancedLine.indexOf("Prefix Modifier") > -1) ? "prefix" : "suffix";
+
+            let modifierName = affix.modifierName.replace(rrep, "").replace(vrep, ",").trim();
+            let invertedModifierName = affix.invertedModifierName.replace(rrep, "").replace(vrep, ",").trim();
+
+            let parsedName = modifierName;
+            let modifierValues = [];
+            let invertedParsedName = invertedModifierName;
+            let invertedModifierValues = [];
+            if (!modifier.notable) {
+                parsedName = modifierName.replace(/([0-9.]+)/g, "#").replace(/-#/g, "#");
+                modifierValues = modifierName.match(/(-?[0-9.]+)/g, "#");
+                invertedParsedName = invertedModifierName.replace(/([0-9.]+)/g, "#").replace(/-#/g, "#");
+                invertedModifierValues = invertedModifierName.match(/(-?[0-9.]+)/g, "#");
+            }
+
+            if (affix.modifierName == "Desecrated Suffix" || affix.modifierName == "Desecrated Prefix") {
+                thisObject.#unrevealed.push((affix.modifierName == "Desecrated Suffix") ? "suffix" : "prefix");
+                return;
+            }
+
+            let affixMatches = [];
+
+            // Built tri+ part check
+            let parts = parsedName.split(", ");
+            let multiPartName = null;
+            let multiPartValues = null;
+            if (parts.length > 2) {
+                // TODO : refactor to try all permutations
+                multiPartName = [parts[parts.length - 1]];
+                multiPartValues = [modifierValues[modifierValues.length - 1]];
+                for (let i = 0; i < parts.length - 1; i++) {
+                    multiPartName.push(parts[i]);
+                    multiPartValues.push(modifierValues[i]);
+                }
+                multiPartName = multiPartName.join(", ");
+            }
+
+            // Find mod in base mods
+            $.each(poecd['basemods'][thisObject.#baseId], function (index, baseModId) {
+                let modDetails = poecd['modifiers']['seq'][poecd['modifiers']['ind'][baseModId]];
+                let modName = modDetails['name_modifier'];
+
+                // Change values to # for modifier name
+                if (!modifier.notable) {
+                    modName = modName.replace(/([0-9.]+)/g, "#");
+                }
+
+                // Match modifier name and type
+                if ((modName == parsedName || modName == invertedParsedName || (multiPartName !== null && modName == multiPartName)) && modDetails.affix == modifier.atype) {
+                    let affixMatch = { "id": baseModId, "tier": null, "values": null };
+
+                    // Which values are we taking
+                    let takeValues = invertedModifierValues;
+                    if (modName == parsedName) {
+                        takeValues = modifierValues;
+                    }
+                    if (multiPartName !== null && modName == multiPartName) {
+                        takeValues = multiPartValues;
+                    }
+
+                    // Find tier match
+                    let tierMatchIndex = null;
+                    $.each(poecd['tiers'][baseModId][thisObject.#baseId], function (tierIndex, tierDetails) {
+                        let tierValues = JSON.parse(tierDetails.nvalues);
+
+                        var tierMatch = true;
+                        $.each(tierValues, function (valuesIndex, values) {
+                            let affixValue = parseFloat(takeValues[valuesIndex]);
+                            let valuesMatch = false;
+                            if (Array.isArray(values)) {
+                                if (affixValue >= parseFloat(values[0]) && affixValue <= parseFloat(values[1])) {
+                                    valuesMatch = true;
+                                }
+                            } else {
+                                if (affixValue == parseFloat(values)) {
+                                    valuesMatch = true;
+                                }
+                            }
+                            if (!valuesMatch) {
+                                tierMatch = false;
+                            }
+                        });
+
+                        if (tierMatch) {
+                            // Tier matches
+                            tierMatchIndex = tierIndex;
+                            return;
+                        }
+                    });
+
+                    if (tierMatchIndex !== null) {
+                        affixMatch.tier = tierMatchIndex;
+                        affixMatch.values = takeValues;
+                    }
+
+                    affixMatches.push(affixMatch);
+                }
+            });
+
+            if (affixMatches.length == 0) {
+                // Could not find affix
+                thisObject.#errors.push("Could not find a valid affix for : \"" + parsedName + "\"\n(Might be a legacy modifier)\n");
+                return;
+            }
+
+            let useAffix = null;
+            if (affixMatches.length > 1) {
+                let numberOfValidAffixes = 0;
+                let useAffixIndex = -1;
+                let firstValidAffix = -1;
+                $.each(affixMatches, function (affixMatchIndex, affixMatch) {
+                    if (affixMatch.tier !== null) {
+                        useAffixIndex = affixMatchIndex;
+                        numberOfValidAffixes++
+                        if (firstValidAffix < 0) {
+                            firstValidAffix = affixMatchIndex;
+                        }
+                    }
+                });
+                if (numberOfValidAffixes == 0) {
+                    thisObject.#errors.push("Could not find a matching tier for any matching affix : \"" + parsedName + "\"\n");
+                    return;
+                }
+                if (numberOfValidAffixes > 1) {
+                    // Multiple matches, use first
+                    affixMatches = [affixMatches[firstValidAffix]];
+                } else {
+                    // Only one match
+                    affixMatches = [affixMatches[useAffixIndex]];
+                }
+            }
+
+            useAffix = affixMatches[0];
+
+            if (useAffix.tier == null) {
+                thisObject.#errors.push("Could not find a matching tier for matching affix for : \"" + parsedName + "\"\n");
+                return;
+            }
+
+            modifier.id = useAffix.id;
+            modifier.tier = useAffix.tier;
+
+            if (affix.desecrated) {
+                modifier.mgrp = 10;
+                thisObject.desecrated[modifier.id] = true;
+            }
+
+            thisObject.built[modifier.id] = (modifier.tier > -1) ? poecd['tiers'][modifier.id][thisObject.#baseId][modifier.tier]["ilvl"] : -1;
+
+            if (affix.fractured) {
+                thisObject.fractured[modifier.id] = true;
+            }
+
+            $.each(useAffix.values, function (valueIndex, value) {
+                useAffix.values[valueIndex] = parseFloat(useAffix.values[valueIndex]);
+            });
+
+            thisObject.#values[modifier.id] = useAffix.values;
+            thisObject.#modifiers.push(modifier);
+        });
+    }
+
+    getBaseRuneType(baseId) {
+        for (let i = 0; i < poecd.socketables.bybase.armour.length; i++) {
+            if (poecd.socketables.bybase.armour[i] == baseId) {
+                return "armour";
+            }
+        }
+
+        for (let i = 0; i < poecd.socketables.bybase.weapons.length; i++) {
+            if (poecd.socketables.bybase.weapons[i] == baseId) {
+                return "weapons";
+            }
+        }
+
+        for (let i = 0; i < poecd.socketables.bybase.caster.length; i++) {
+            if (poecd.socketables.bybase.caster[i] == baseId) {
+                return "caster";
+            }
+        }
+
+        return null;
+    }
+
+    getRuneType(socketable) {
+        if (socketable.stype == "rune") {
+            return "runes";
+        }
+
+        if (socketable.stype == "soulcore") {
+            return "cores";
+        }
+
+        return "talisman";
+    }
+
+    findCombinations(numbers, target, maxNumbersUsed) {
+        const results = [];
+
+        function backtrack(index, currentCounts, currentSum, totalUsed) {
+            if (currentSum === target && totalUsed <= maxNumbersUsed) {
+                results.push({ ...currentCounts });
+                return;
+            }
+
+            if (currentSum > target || index >= numbers.length || totalUsed > maxNumbersUsed) {
+                return;
+            }
+
+            const num = numbers[index];
+            const maxCount = Math.floor((target - currentSum) / num);
+
+            for (let count = 0; count <= maxCount; count++) {
+                const newTotalUsed = totalUsed + count;
+                if (newTotalUsed > maxNumbersUsed) break;
+
+                currentCounts[num] = count;
+                backtrack(index + 1, currentCounts, currentSum + count * num, newTotalUsed);
+            }
+
+            delete currentCounts[num]; // Clean up for backtracking
+        }
+
+        backtrack(0, {}, 0, 0);
+        return results;
+    }
+
+    parseSocketables() {
+        if (this.#runes) {
+            let baseRuneType = this.getBaseRuneType(new String(this.#baseId));
+            if (baseRuneType) {
+                let runesData = {};
+                let rreg = /([0-9.]+)/gm;
+                let thisObject = this;
+                $.each(this.#runes, function (runeIndex, rune) {
+                    rune = rune.replace("(rune)", "").trim();
+                    if (rune) {
+                        let m;
+                        let values = [];
+                        while ((m = rreg.exec(rune)) !== null) {
+                            // This is necessary to avoid infinite loops with zero-width matches
+                            if (m.index === rreg.lastIndex) {
+                                regex.lastIndex++;
+                            }
+
+                            values.push(parseFloat(m[0]));
+                        }
+
+                        let affixName = rune.replace(rreg, "#").replace(/\-/g, "");
+
+                        // Cycle runes to find match for affix
+                        $.each(poecd.socketables.seq, function (socketIndex, socketable) {
+                            let socketMods = JSON.parse(socketable.mods);
+                            let modId = socketMods[baseRuneType];
+
+                            if (!modId && socketMods.all) {
+                                modId = socketMods.all;
+                            }
+
+                            if (!modId && socketMods.class) {
+                                $.each(socketMods.class, function (classIndex, classes) {
+                                    $.each(classes.bases, function (classBaseIndex, classBase) {
+                                        if (classBase == thisObject.#baseId) {
+                                            modId = classBase.mod;
+                                        }
+                                    });
+                                });
+                            }
+
+                            if (modId) {
+                                let socketMod = poecd.modifiers.seq[poecd.modifiers.ind[modId]];
+                                if (socketMod) {
+                                    if (socketMod.name_modifier == affixName) {
+                                        if (!runesData[affixName]) runesData[affixName] = [];
+                                        // Affix matches 
+                                        runesData[affixName].push({
+                                            "socketable": socketable.id_socketable,
+                                            "type": thisObject.getRuneType(socketable),
+                                            "currentValues": values,
+                                            "socketValues": JSON.parse(poecd.tiers[modId][thisObject.#baseId][0].nvalues)
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+
+                $.each(runesData, function (affixName, runes) {
+                    let total = 0;
+                    $.each(runes[0].currentValues, function (valueIndex, value) {
+                        total += value;
+                    });
+                    let numbers = [];
+                    $.each(runes, function (runeIndex, runeData) {
+                        let number = 0;
+                        $.each(runeData.socketValues, function (valueIndex, value) {
+                            number += value;
+                        });
+                        numbers.push(number);
+                    });
+                    let combinations = thisObject.findCombinations(numbers, total, thisObject.#sockets);
+                    if (combinations.length == 0) {
+                        // Could not find any combinations for socketable
+                        thisObject.#errors.push("Could not find any combination for socketable : \"" + affixName + "\"\n");
+                        return;
+                    }
+                    let combination = combinations[0];
+                    $.each(combination, function (number, amount) {
+                        $.each(runes, function (runeIndex, runeData) {
+                            let total = 0;
+                            $.each(runeData.socketValues, function (valueIndex, value) {
+                                total += value;
+                            });
+                            if (number == total) {
+                                for (let count = 0; count < amount; count++) {
+                                    thisObject.#socketed.push({
+                                        "id": parseInt(runeData.socketable),
+                                        "type": runeData.type
+                                    });
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+        }
+    }
+}
+
+function poec_importItemPOE2(ditem, mode) {
+    if (ditem.indexOf("--------") > -1) {
+        try {
+            var item = new poe2Item(ditem);
+            //console.log(item);
+
+            if (item.rarity == "Unique") {
+                poec_storedImportInfo = $("#poecItemImportText").val();
+                $("#poecItemImportText").val("Can't import unique item!").addClass("error");
+                return;
+            }
+
+            if (item.baseItemId == null) {
+                poec_storedImportInfo = $("#poecItemImportText").val();
+                $("#poecItemImportText").val("Can't find item base!").addClass("error");
+                return;
+            }
+
+            poec_itemImportParams["sockets"] = item.sockets ?? 0;
+            poec_itemImportParams["implicits"] = item.implicits ?? null;
+            poec_itemImportParams["quality"] = item.quality ?? null;
+            poec_itemImportParams["ilvl"] = item.level ?? null;
+            poec_itemImportParams["bitem"] = item.baseItemId;
+            poec_itemImportParams["base"] = item.baseId;
+            poec_itemImportParams["influences"] = null;
+            poec_itemImportParams["rarity"] = item.rarity;
+            poec_itemImportParams["socketed"] = item.socketed;
+            poec_itemImportParams["corrupted"] = item.corrupted;
+            poec_itemImportParams["veils"] = item.unrevealed;
+            poec_itemImportParams["fracs"] = item.fractured;
+            poec_itemImportParams["build"] = item.built;
+            poec_itemImportParams["values"] = item.values;
+            poec_itemImportParams["desecrated"] = item.desecrated;
+            poec_itemImportParams["bimps"] = {};
+
+            //console.log(poec_itemImportParams);
+
+            // Switch method via rarity of item
+            switch (item.rarity) {
+                case 'normal':
+                    if (poec_cMethod != "alteration" && poec_cMethod != "transmute" && poec_cMethod != "alchemy") {
+                        poec_itemImportParams["method"] = "alteration";
+                    }
+                    break;
+                case 'magic':
+                    if (poec_cMethod != "augmentation" && poec_cMethod != "regal") {
+                        poec_itemImportParams["method"] = "regal";
+                    }
+                    break;
+                default:
+                    if (poec_cMethod != "exalted") {
+                        poec_itemImportParams["method"] = "exalted";
+                    }
+                    break;
+            }
+
+            //console.log(poec_itemImportParams);
+
+            if (item.errors.length == 0 || mode == "external") {
+                poec_importItemProceed();
+                return;
+            }
+
+            poec_storedImportInfo = $("#poecItemImportText").val();
+            $("#poecItemImportText").val(item.errors.length + " anomalie(s)!\n\nClick import again to proceed regardless.\n\n" + item.errors.join("\n")).addClass("anomalies");
+        } catch (err) {
+            poec_storedImportInfo = $("#poecItemImportText").val();
+            console.log(err);
+            $("#poecItemImportText").val("AN ERROR OCCURED!\n\nMake SURE you used the ALT+CTRL+C function. (advanced mod descriptions NEED to be enabled in the ui options)\n\nIf this persists please let me know by sending me an e-mail at dev@craftofexile.com with the item data so i can investigate.").addClass("error");
+        }
+    } else {
+        poec_storedImportInfo = $("#poecItemImportText").val();
+        $("#poecItemImportText").val("Bad item format!").addClass("error");
+    }
+}
+
+function updateSelectedOmens() {
+    let omens = "";
+    crsimCurrentActiveOmens = [];
+    $("#crsimActSub_poe2_omens").find(".sel").each(function () {
+        crsimCurrentActiveOmens.push($(this).attr("scode"));
+        omens += "<div><div>" + $(this).find(".icon").html() + "</div><div>Omen of " + $(this).text() + "</div></div>";
+    });
+    if (omens != "") {
+        if ($("#crsimActiveOmens").length == 0) {
+            $("<div>").attr("id", "crsimActiveOmens").appendTo($("#crsimOptions"));
+        }
+        $("#crsimActiveOmens").html("<div class='label'>Active Omens</div><div class='omens'>" + omens + "</div>");
+    } else {
+        $("#crsimActiveOmens").remove();
+    }
+}
+
+function selectOmens(omens) {
+    $.each(omens, function (key, omen) {
+        $("#crsimActSub_poe2_omens").find(".acs_poe2_omens" + omen).addClass("sel");
+    });
+    updateSelectedOmens();
+}
+
+function consumeOmens(omens, override) {
+    if (!omens) return null;
+
+    let spentOmens = [];
+    $.each(omens, function (key, omen) {
+        if (crsimCurrentActiveOmens.includes(omen)) {
+            spentOmens.push(omen);
+        }
+        crsimCurrentActiveOmens = crsimCurrentActiveOmens.filter(e => e !== omen);
+        if (!override) {
+            $("#crsimActSub_poe2_omens").find(".acs_poe2_omens" + omen).removeClass("sel");
+        }
+    });
+
+    if (!override) {
+        spendOmens(spentOmens);
+        updateSelectedOmens();
+    }
+
+    return spentOmens;
+}
+
+function spendOmens(omens) {
+    $.each(omens, function (key, omen) {
+        poec_simUpdateSpending("actions", "poe2_omens", 1, null, omen);
+    });
+}
+
+function checkOmensForMethod(method) {
+    if (omensForMethods[method]) {
+        let hasOmen = false;
+        $.each(omensForMethods[method], function (key, omen) {
+            if (crsimCurrentActiveOmens.includes(omen)) {
+                hasOmen = true;
+            }
+        });
+        return hasOmen;
+    }
+    return false;
+}
+
+function checkForActiveOmen(omen) {
+    if (crsimCurrentActiveOmens.includes(omen)) {
+        return true;
+    }
+    return false;
+}
+
+function throwOmenError(override) {
+    let errors = "This combination of Omens is not valid";
+    if (!override) {
+        $("#simItemHoverer").mcuiNotice({ text: errors, type: "alert" }).showNotice();
+        $("#simItemHoverer").mcuiNotice().setText(errors);
+    } else {
+        poec_simThrowError(errors);
+    }
+}
+
+function obtainHomogenisationTags(affixes) {
+    let tags = [];
+    $.each(affixes, function (key, affix) {
+        let mod = poecd["modifiers"]["seq"][poecd["modifiers"]["ind"][affix.id]];
+        if (mod.mtypes) {
+            let affixTags = mod.mtypes;
+            affixTags = (affixTags.replace(/^\|+|\|+$/g, '')).split("|");
+            $.each(affixTags, function (tagKey, tag) {
+                tag = parseInt(tag);
+                if (!tags.includes(tag) && !crsim_ignhomotypes.includes(tag)) {
+                    tags.push(tag);
+                }
+            });
+        }
+    });
+    if (tags.length == 0) {
+        return null;
+    }
+    return tags;
+}
+
+function poec_selectOmen(button) {
+    let omen = $(button).attr("omen");
+
+    if (poec_cOmens == null) {
+        poec_cOmens = [];
+    } else {
+        poec_cOmens = poec_cOmens.split("|");
+    }
+
+    if ($(button).hasClass("selected")) {
+        $(button).removeClass("selected");
+        if (poec_cOmens.includes(omen)) {
+            poec_cOmens = poec_cOmens.filter(e => e !== omen);
+        }
+    } else {
+        $(button).addClass("selected");
+        if (!poec_cOmens.includes(omen)) {
+            poec_cOmens.push(omen);
+        }
+    }
+
+    if (poec_cOmens.length == 0) {
+        poec_cOmens = null;
+    } else {
+        poec_cOmens = poec_cOmens.join("|");
+    }
+
+    poec_updateOmenEffect();
+    poec_buildShareLink(false);
+    poec_refreshAffixes(false);
+}
+
+function poec_updateOmenEffect() {
+    // Filter omens for method
+    if (poec_cOmens == null) {
+        poec_cOmens = [];
+    } else {
+        poec_cOmens = poec_cOmens.split("|");
+    }
+
+    let filteredOmens = [];
+    $.each(poec_cOmens, function (key, omen) {
+        if (omensForMethods[poec_cMethod].includes(omen)) {
+            filteredOmens.push(omen);
+        }
+    });
+
+    if (filteredOmens.length == 0) {
+        poec_cOmens = null;
+    } else {
+        poec_cOmens = filteredOmens.join("|");
+    }
+
+    let prefixOnly = false;
+    let suffixOnly = false;
+    poec_omenEffect = null;
+
+    let fullOmens = "|" + poec_cOmens + "|";
+
+    if (fullOmens.indexOf("|dextral_annulment|") > -1
+        || fullOmens.indexOf("|dextral_coronation|") > -1
+        || fullOmens.indexOf("|dextral_exaltation|") > -1) {
+        poec_omenEffect = "prefix";
+        prefixOnly = true;
+    }
+
+    if (fullOmens.indexOf("|sinistral_annulment|") > -1
+        || fullOmens.indexOf("|sinistral_coronation|") > -1
+        || fullOmens.indexOf("|sinistral_exaltation|") > -1) {
+        poec_omenEffect = "suffix";
+        suffixOnly = true;
+    }
+
+    poec_omenHomogenise = false;
+    if (fullOmens.indexOf("|homogenising_coronation|") > -1
+        || fullOmens.indexOf("|homogenising_exaltation|") > -1) {
+        poec_omenHomogenise = true;
+    }
+
+    if (prefixOnly && suffixOnly) {
+        poec_omenEffect = null;
+    }
+}
+
+function filterSimulatorTieredCurrencySubAction(subAction) {
+    if (subAction == null || typeof subAction !== 'string') return subAction;
+    subAction = subAction.replace(/^transmute_|regal_|augmentation_|chaos_|exalted_/, "");
+    return subAction;
+}

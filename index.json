@@ -1,0 +1,194 @@
+{
+ "fetchedAt": "2026-09-26T00:15:21.759Z",
+ "files": [
+  {
+   "url": "https://www.craftofexile.com/?game=poe2",
+   "file": "_game_poe2",
+   "status": 200,
+   "bytes": 25644,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://www.craftofexile.com/weightings?game=poe2",
+   "file": "weightings_game_poe2",
+   "status": 200,
+   "bytes": 13177,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://www.craftofexile.com/emulator?game=poe2",
+   "file": "emulator_game_poe2",
+   "status": 200,
+   "bytes": 25645,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://beta.craftofexile.com/?game=poe2",
+   "file": "beta__game_poe2",
+   "status": 200,
+   "bytes": 88600,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://beta.craftofexile.com/whats-new?game=poe2",
+   "file": "beta_whats-new_game_poe2",
+   "status": 200,
+   "bytes": 28889,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://beta.craftofexile.com/roadmap?game=poe2",
+   "file": "beta_roadmap_game_poe2",
+   "status": 200,
+   "bytes": 44641,
+   "type": "text/html; charset=UTF-8"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/main/poec_data.json",
+   "file": "json_poe2_main_poec_data.json",
+   "status": 200,
+   "bytes": 3075741,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/lang/poec_lang.us.json",
+   "file": "json_poe2_lang_poec_lang.us.json",
+   "status": 200,
+   "bytes": 137423,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/lang/poec_lang.ru.json",
+   "file": "json_poe2_lang_poec_lang.ru.json",
+   "status": 200,
+   "bytes": 469660,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/data/main/poec_data.json",
+   "file": "json_data_main_poec_data.json",
+   "status": 200,
+   "bytes": 8651001,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/packages/package.js?v=1786125802",
+   "file": "packages_package.js_v_1786125802",
+   "status": 200,
+   "bytes": 1525266,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://www.craftofexile.com/js/poe2.js?v=1781532311",
+   "file": "js_poe2.js_v_1781532311",
+   "status": 200,
+   "bytes": 86968,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/main/poec_data.json?v=1781640702",
+   "file": "json_poe2_main_poec_data.json_v_1781640702",
+   "status": 200,
+   "bytes": 3075741,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/lang/poec_lang.us.json?v=1781532342",
+   "file": "json_poe2_lang_poec_lang.us.json_v_1781532342",
+   "status": 200,
+   "bytes": 137423,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/prices/poec_prices.json?v=1783967583",
+   "file": "json_poe2_prices_poec_prices.json_v_1783967583",
+   "status": 200,
+   "bytes": 28305,
+   "type": "application/json"
+  },
+  {
+   "url": "https://www.craftofexile.com/json/poe2/poec_common.json?v=1780168551",
+   "file": "json_poe2_poec_common.json_v_1780168551",
+   "status": 200,
+   "bytes": 123714,
+   "type": "application/json"
+  },
+  {
+   "url": "https://beta.craftofexile.com/ext/jquery.min.js?v=1772417848",
+   "file": "beta_ext_jquery.min.js_v_1772417848",
+   "status": 200,
+   "bytes": 87533,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://beta.craftofexile.com/ext/pretty-print-json.min.js?v=1772417848",
+   "file": "beta_ext_pretty-print-json.min.js_v_1772417848",
+   "status": 200,
+   "bytes": 2079,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://beta.craftofexile.com/packages/files/package_poe2.js?v=1790355360",
+   "file": "beta_packages_files_package_poe2.js_v_1790355360",
+   "status": 200,
+   "bytes": 481637,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://beta.craftofexile.com/json/settings.json?v=1789656882",
+   "file": "beta_json_settings.json_v_1789656882",
+   "status": 200,
+   "bytes": 11515,
+   "type": "application/json"
+  },
+  {
+   "url": "https://beta.craftofexile.com/json/poe2/4.5.5.3/localization/english.json?v=1790085021",
+   "file": "beta_json_poe2_4.5.5.3_localization_english.json_v_1790085021",
+   "status": 200,
+   "bytes": 337155,
+   "type": "application/json"
+  },
+  {
+   "url": "https://beta.craftofexile.com/json/poe2/4.5.5.3/data.json?v=1790085021",
+   "file": "beta_json_poe2_4.5.5.3_data.json_v_1790085021",
+   "status": 200,
+   "bytes": 2963654,
+   "type": "application/json"
+  },
+  {
+   "url": "https://beta.craftofexile.com/json/poe2/4.5.5.3/prices.json?v=1790355360",
+   "file": "beta_json_poe2_4.5.5.3_prices.json_v_1790355360",
+   "status": 200,
+   "bytes": 92472,
+   "type": "application/json"
+  },
+  {
+   "url": "https://beta.craftofexile.com/packages//files//package_worker_calculator_processor_poe2.js?v=1790355360",
+   "file": "beta_packages_files_package_worker_calculator_processor_poe2.js_v_1790355360",
+   "status": 200,
+   "bytes": 357855,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://beta.craftofexile.com/packages//files//package_worker_simulator_processor_poe2.js?v=1790355360",
+   "file": "beta_packages_files_package_worker_simulator_processor_poe2.js_v_1790355360",
+   "status": 200,
+   "bytes": 347623,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://beta.craftofexile.com/packages//files//package_worker_fossil_optimizer_processor.js?v=1790355360",
+   "file": "beta_packages_files_package_worker_fossil_optimizer_processor.js_v_1790355360",
+   "status": 200,
+   "bytes": 386538,
+   "type": "application/javascript"
+  },
+  {
+   "url": "https://www.craftofexile.com/js/ext/tiny_mce/tiny_mce.js",
+   "file": null,
+   "status": 200,
+   "bytes": 0,
+   "type": "text/html; charset=UTF-8"
+  }
+ ]
+}

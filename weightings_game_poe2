@@ -1,0 +1,135 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head><title>Craft of Exile</title><meta name="title" property="og:title" content="Craft of Exile"/><meta http-equiv="content-type" content="text/html; charset=utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"><base href="https://www.craftofexile.com/"/><meta name="keywords" content="path of exile,craft,exile,craft of exile,crafting,simulator,calculator,probability,probabilities,fossil,essence,currency"/><meta name="description" property="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods."/><meta name="og:title" content="Craft of Exile"/><meta name="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods."/><link rel="icon" type="image/x-icon" href="images/favicon.ico"><script type="text/javascript" src="packages/package.js?v=1786125802"></script><link rel="stylesheet" type="text/css" href="packages/package.css?v=1781099450"/><script type="text/javascript" src="js/poe2.js?v=1781532311"></script><link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet"><script type="text/javascript" src="json/poe2/poec_common.json?v=1780168551"></script><script language='javascript'>var versions=[{"name":"Early-Access","patch":"0.5.0"},{"name":"EA-4","patch":"0.4.0"},{"name":"EA-3","patch":"0.3.0"},{"name":"EA-2f","patch":"0.2.0f"},{"name":"EA-2e","patch":"0.2.0e"},{"name":"EA-1","patch":"0.1.0e"}];var current_version='0.5.0';</script><!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-LP84H6PC5N"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-LP84H6PC5N');</script><script>window["nitroAds"] = window["nitroAds"] || {createAd: function() {window.nitroAds.queue.push(["createAd", arguments]);},queue: []};</script><script async src="https://s.nitropay.com/ads-556.js"></script></head><body class='pkey_weightings game_poe2'><input type='hidden' id='get_clng' value='us'/><input type='hidden' id='get_sdvu' value=''/><div id='poecUserState'><div class='patreon med_shadow'><div class='label'>Patreon</div><div class='choices'><div class='choice' onClick='window.open("https://www.patreon.com/user?u=73102408")'>Become a patreon</div><div class='choice' onClick='window.location="https://www.craftofexile.com/patreon-auth?login=1"'>Log in with patreon</div></div></div></div><input type='hidden' id='poecNoAds' value='0'/><div id='appConstants' class='hidden'>{"lng":0,"cclng":"us","pagedat":{"title":["Weightings"],"html":"weightings","data":false,"mkey":"topmenu_poe2","pkey":"weightings"},"index":{"ind":{"calculator":{"mkey":"mainmenu_poe2","pkey":"calculator"},"simulator":{"mkey":"mainmenu_poe2","pkey":"simulator"},"emulator":{"mkey":"mainmenu_poe2","pkey":"emulator"},"affinities":{"mkey":"mainmenu_poe1","pkey":"affinities"},"guides":{"mkey":"mainmenu_poe1","pkey":"guides"},"appraise":{"mkey":"topmenu_poe1","pkey":"appraise"},"how-to-use":{"mkey":"topmenu_poe2","pkey":"howtouse"},"faq":{"mkey":"topmenu_poe1","pkey":"faq"},"changelog":{"mkey":"topmenu_poe2","pkey":"changelog"},"about":{"mkey":"topmenu_poe2","pkey":"about"},"basics":{"mkey":"topmenu_poe1","pkey":"basics"},"advanced":{"mkey":"topmenu_poe1","pkey":"advanced"},"changes":{"mkey":"topmenu_poe1","pkey":"changes"},"metamods":{"mkey":"topmenu_poe1","pkey":"metamods"},"modgroups":{"mkey":"topmenu_poe1","pkey":"modgroups"},"weightings":{"mkey":"topmenu_poe2","pkey":"weightings"},"privacy":{"mkey":"botmenu","pkey":"privacy"},"donate":{"mkey":"botmenu","pkey":"donate"},"poe-auth":{"mkey":"hidden","pkey":"poeauth"},"patreon-auth":{"mkey":"hidden","pkey":"patreonauth"}},"rev":{"mainmenu_poe1":{"calculator":["calculator"],"simulator":["simulator"],"emulator":["emulator"],"affinities":["affinities"],"guides":["guides"]},"mainmenu_poe2":{"calculator":["calculator"],"simulator":["simulator"],"emulator":["emulator"]},"topmenu_poe1":{"appraise":["appraise"],"howtouse":["how-to-use"],"faq":["faq"],"changelog":["changelog"],"about":["about"],"basics":["basics"],"advanced":["advanced"],"changes":["changes"],"metamods":["metamods"],"modgroups":["modgroups"]},"topmenu_poe2":{"howtouse":["how-to-use"],"weightings":["weightings"],"changelog":["changelog"],"about":["about"]},"botmenu":{"privacy":["privacy"],"donate":["donate"]},"hidden":{"poeauth":["poe-auth"],"patreonauth":["patreon-auth"]}},"landing":{"mkey":"mainmenu_poe2","pkey":"calculator"}},"baseurl":"https:\/\/www.craftofexile.com\/","fullurl":"https:\/\/www.craftofexile.com\/weightings","debug":false,"get":{"page":"weightings","game":"poe2","sdvu":null},"online":true,"game":"poe2"}</div><div id="siteWrap">
+    <div id="top">
+        <div class='swrap'>
+            <div id="d4cLinkBack"><a href='https://beta.craftofexile.com?game=poe2'
+                    target="_blank">beta.craftofexile.com</a></div>
+            <div id="arpgLinkBack"><a href='https://www.arpg.info/poe' target="_blank">arpg.info</a></div>
+            <div id="gameVersion"><a href='javascript:change_game_version("poe1")'>poe1</a></div>
+            <div id="topMenu" class="appmenu">{"mkey":"topmenu_poe2","struct":{"howtouse":{"title":["How to use"],"html":"how_to_use","data":false},"weightings":{"title":["Weightings"],"html":"weightings","data":false},"changelog":{"title":["Changelog"],"html":"changelog","data":false},"about":{"title":["About"],"html":"about","data":false}}}</div>
+            <div id='clngsel' onClick='poec_cLngChanger(this)'></div>
+        </div>
+    </div>
+    <div id="header">
+        <div class='swrap'>
+            <a id="logo" href="https://www.craftofexile.com/?game=poe2">
+                <img src='images/ui_poe2/logo.png' class="reg" />
+                <img src='images/ui/mlogo.png' class="sml" />
+            </a>
+            <div id="mainMenu" class="appmenu inline-block">{"mkey":"mainmenu_poe2","struct":{"calculator":{"title":["Calculator"],"page":"modules","landing":true,"data":true,"id":"calculatorTab","classes":"module","attributes":{"tval":"calculator"}},"simulator":{"title":["Simulator"],"page":"modules","data":true,"id":"simulatorTab","classes":"module","attributes":{"tval":"simulator"}},"emulator":{"title":["Emulator"],"page":"modules","data":true,"id":"emulatorTab","classes":"module","attributes":{"tval":"emulator"}}}}</div>
+            <div id="mobileMenu"><svg height="32px" id="Layer_1" style="enable-background:new 0 0 32 32;" version="1.1"
+                    viewBox="0 0 32 32" width="32px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"
+                    xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <path
+                        d="M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2  s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2  S29.104,22,28,22z" />
+                </svg></div>
+            <div id="menuLinks">
+                <a href="https://poe.ninja" target="_blank" title="POE.ninja">
+                    <div id="npoeninja" class="nhelem apptt" apptt="POE.ninja"><img src="images/ui/poeninja.png"></div>
+                </a>
+                <a href="donate" title="Donations">
+                    <div id="ndonate" class="nhelem apptt" apptt="Donate"><img src="images/ui/donate.png"></div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div id="version">
+        <div class='swrap'>
+            <div id="versionFlex">
+                <div id="versionWarning"></div>
+                <div id="versionHolder" class="mshadow noselect"></div>
+            </div>
+        </div>
+    </div>
+    <div id="poe2Disclaimer">
+        <div class='swrap' style="display:flex;gap:10px;flex-direction: column;">
+            <div class="gen_msg mshadow" style="background:rgba(255, 194, 61,0.5);color:#FFF;">
+                <div class="ficon warning" style="color:var(--secondary-item-hover);"></div>It is highly recommended to
+                use the <a href='https://beta.craftofexile.com?game=poe2' style="color:var(--secondary-item-hover);">new
+                    site
+                    version</a>
+                going
+                forward as it is up to date and is more feature complete. Visit the <a
+                    href='https://beta.craftofexile.com/whats-new?game=poe2' target="_blank"
+                    style="color:var(--secondary-item-hover);">what's
+                    new</a> and the <a href='https://beta.craftofexile.com/roadmap?game=poe2' target="_blank"
+                    style="color:var(--secondary-item-hover);">roadmap</a> pages to
+                learn more.
+            </div>
+            <div class="gen_msg mshadow">
+                <div class="ficon exclamation"></div>Current <span
+                    style='color:rgb(255, 194, 61);font-weight:bold'>weightings</span> values have been extrapolated
+                using a special methods. You can view the details about this by going to the <a href="weightings"
+                    target="_self">Weightings</a> page.
+            </div>
+        </div>
+    </div>
+    <div id="content" style="margin-top:20px">
+        <div class='swrap'><h1>Weightings</h1>
+Unfortunaly the information regarding modifier weightings is not part of the game client's for Path of Exile 2. However
+thanks to <b>Krakenbul</b> and the people at the <a href="https://discord.gg/3VxKY6gt7j" target="_blank">Prohibited
+    Library Discord</a> have devised a way of finding them out using
+recombinators. If
+you wish to
+know more the relevant information is in the #poe2-recombinator-chat channel.
+<br><br>
+<h2>Method for bases that cannot be recombined</h2>
+For bases that cannot be recombined, such as Charms, Jewels, Tablets and Waystones the following method was used :
+<br><br>
+The data is obtained from parsing trade-site listings. This data is consolidated and each item has its modifiers matched
+to actual game modifiers which gives an overview of the general distribution (weight).
+<br><br>
+Then a normalization script is applied to apply breakpoints to the weighting numbers and create familiar curves. A
+normalization script between base groups is also applied to ensure consistency across similar base types for similar
+modifiers.
+<br><br>
+The higher the number of items parsed the better.
+<br><br>
+<h2>Caveats</h2>
+Items from the trade site can generally have a bias towards more desired mods and/or higher tier mods. I try to keep
+this at a minimum by parsing the lowest value listings as high value listings will tend to have better mods. That being
+said in some cases its necessary to go up in value listings because some modifiers are so desirable and rare that they
+only appear meaningfully past a certain price point.
+<br><br>
+A good balance is needed to get the broadest view and is evaluated on a case by case basis. This bias is accounted for
+in part in the normalization script.
+<br><br>
+I'm sure these are not perfect and there might be errors or inconsistencies but the goal is to at least give a rough
+idea of which modifiers and tiers are rarer or more common instead of having it shrouded in mystery and feelings.
+<br><br>
+<div class="gen_msg mshadow">
+    <div class="ficon exclamation"></div>Please note that anytime there is a new patch applied to the game its possible
+    that
+    weightings have been changed. If at
+    all viable I will try to obtain data again when there are major patches applied to keep weightings relevant.
+</div>
+<br>
+<h2>Credits</h2>
+Gathering this data is especially arduous, special thanks to <b><a href="https://echomirror.shop/" target="_blank"
+        style="font-weight:bold">Echo Shop</a></b> and
+<b>QuackQuack</b> for big help in this
+endeavour.</div>
+    </div>
+    <div id="bottom">
+        <div class='swrap'>
+            <div id="botad">
+                <div id="botadholder">
+                    <div id="bottom_ad"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="footer">
+        <div class='swrap'>
+            <div id="botMenu" class="appmenu">{"mkey":"botmenu","struct":{"privacy":{"title":["Privacy"],"html":"privacy","data":false},"donate":{"title":["Donate"],"html":"donate","data":false}}}</div>
+            <div id="ncmp-consent-link"></div>
+            <div id="botDisclaimer">craftofexile.com is not affiliated with or endorsed by Grinding Gear Games</div>
+        </div>
+    </div>
+</div>
+<div id="bgImage"></div>
+<div id="leftadholder" class="arail">
+    <div id="left_ad"></div>
+</div>
+<div id="rightadholder" class="arail right">
+    <div id="right_ad"></div>
+</div><script type="text/javascript">$(document).ready(function(){app_init();});</script></body></html>

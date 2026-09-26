@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+    <title>Craft of Exile</title>
+    <meta name="title" property="og:title" content="Craft of Exile" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="https://beta.craftofexile.com/" />
+    <meta name="keywords" content="path of exile,craft,exile,craft of exile,crafting,simulator,calculator,probability,probabilities,fossil,essence,currency" />
+    <meta name="description" property="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <meta name="og:title" content="Craft of Exile" />
+    <meta name="og:description" content="Craft of Exile is a crafting simulator for Path of Exile designed to compute the probabilities of obtaining specific results through different methods." />
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <script type="text/javascript" src="ext/jquery.min.js?v=1772417848"></script><script type="text/javascript" src="ext/pretty-print-json.min.js?v=1772417848"></script><script type="text/javascript" src="packages/files/package_poe2.js?v=1790355360"></script><link rel="stylesheet" type="text/css" href="packages/files/package.css?v=1790030118"/><link rel="stylesheet" type="text/css" href="ext/pretty-print-json.css?v=1772417848"/><link rel="stylesheet" type="text/css" href="css/media.css?v=1784744880"/><link rel="stylesheet" type="text/css" href="css/poe2.css?v=1789656882"/><link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet"><script type="text/javascript" src="json/settings.json?v=1789656882"></script><script type="text/javascript" src="json/poe2/4.5.5.3/localization/english.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/data.json?v=1790085021"></script><script type="text/javascript" src="json/poe2/4.5.5.3/prices.json?v=1790355360"></script>    <!-- Google tag (gtag.js) --><script async src="https://www.googletagmanager.com/gtag/js?id=G-LP84H6PC5N"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-LP84H6PC5N');</script>    <script>window["nitroAds"] = window["nitroAds"] || {createAd: function() {window.nitroAds.queue.push(["createAd", arguments]);},queue: []};</script><script async src="https://s.nitropay.com/ads-556.js"></script></head>
+
+<body class='game_poe2 basePicking'>
+    <div id='coeConstants' class='hidden'>{"path":"roadmap","baseurl":"https:\/\/beta.craftofexile.com\/","fullurl":"https:\/\/beta.craftofexile.com\/roadmap","debug":false,"get":{"page":"roadmap","game":"poe2"},"online":true,"nitro":true,"game":"poe2","patch":"4.5.5.3","core":{"defaultLanguage":"English","languages":["English","French","German","Japanese","Korean","Portuguese","Russian","Spanish","Thai","Traditional Chinese"],"currentPatch":"4.5.5.3","patches":[{"number":"4.5.5.3","label":"0.5.5.3","league":"Forbidden Rites"},{"number":"4.5.5.1.5","label":"0.5.5.1.5","league":"Forbidden Rites"},{"number":"4.5.4.1.2","label":"0.5.4.1.2","league":"Return of the Ancients"},{"number":"4.5.3.1.7","label":"0.5.3.1.7","league":"Return of the Ancients"},{"number":"4.5.2.1.2","label":"0.5.2.1.2","league":"Return of the Ancients"},{"number":"4.5.1.1.3","label":"0.5.1.1.3","league":"Return of the Ancients"},{"number":"4.4.0.4.3","label":"0.4.0.4.3","league":"Fate of the Vaal"}]},"workers":{"calculatorProcessor":"packages\/files\/package_worker_calculator_processor_poe2.js?v=1790355360","simulatorProcessor":"packages\/files\/package_worker_simulator_processor_poe2.js?v=1790355360","fossilOptimizerProcessor":"packages\/files\/package_worker_fossil_optimizer_processor.js?v=1790355360"},"patron":false,"connected":false}</div>
+
+    <div id="snackbarsLeft" class="snackbars flex gap-big flex-columns"></div>
+    <div id="snackbarsRight" class="snackbars flex gap-big flex-columns align-end"></div>
+
+    <header class="top flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center">
+            <nav id="linksMenu" class="topMenu flex flex-grow gap">
+                <a href="https://www.arpg.info" target="_blank">arpg.info</a>
+                <a href="https://www.craftofexile.com" target="_blank">craftofexile.com</a>
+            </nav>
+            <nav id="topMenu" class="topMenu flex flex-grow justify-end align-center gap">
+                <a href="whats-new" class="whats-new">*NEW*</a>
+                <a href="roadmap" class="roadmap">Roadmap</a>
+                <a href="changelog" class="changelog">Changelog</a>
+                <a href="compare" class="compare">Compare</a>
+                <a href="about" class="about">About</a>
+                <a href="https://discord.gg/bGscbKSygD" target="_blank" title="Craft of Exile Discord"><img src="assets/discord_sml.png" class="discord" /></a>
+                <a href="patreon-auth" class="patreon-auth" title="Connect with Patreon"><img src="assets/patreon-square.png" class="patreon" /></a>
+                <!--<a href="poe-auth" class="poe-auth" title="Login with Path of Exile"><img src="assets/login-icon.png" class="login" /></a>-->
+            </nav>
+        </div>
+    </header>
+
+    <header class="main flex justify-center over-shadow">
+        <div class="flex flex-wrap gap-big align-center justify-end">
+            <a id="siteTitle" href="?game=poe2"><img src="assets/full-logo.png" /></a>
+            <nav id="mainMenu" class="flex flex-grow">
+                <a href="" class="tool">Crafting</a>
+                <a href="data" class="data">Data</a>
+            </nav>
+                        <div id="gameToggler" class="flex nowrap">
+                <a href="roadmap?game=poe1" class="poe1">POE 1</a>
+                <a href="roadmap?game=poe2" class="poe2">POE 2</a>
+            </div>
+            <div id="settingsZone"></div>
+            <div id="languageToggler">
+                <div class="current"><img src='assets/shared/ui/lflg_us.png' /></div>
+                <div class="options">
+                    <div class="wrapper med-shadow">
+                        <h1>Languages</h1>
+                        <div class="list">
+                                                            <div key="us" class="active" onClick="UIManager.changeLanguage('us')"><img src='assets/shared/ui/lflg_us.png' />English</div>
+                                                            <div key="de" class="" onClick="UIManager.changeLanguage('de')"><img src='assets/shared/ui/lflg_de.png' />Deutsch</div>
+                                                            <div key="sp" class="" onClick="UIManager.changeLanguage('sp')"><img src='assets/shared/ui/lflg_sp.png' />Español</div>
+                                                            <div key="fr" class="" onClick="UIManager.changeLanguage('fr')"><img src='assets/shared/ui/lflg_fr.png' />Français</div>
+                                                            <div key="jp" class="" onClick="UIManager.changeLanguage('jp')"><img src='assets/shared/ui/lflg_jp.png' />Japanese</div>
+                                                            <div key="pt" class="" onClick="UIManager.changeLanguage('pt')"><img src='assets/shared/ui/lflg_pt.png' />Português</div>
+                                                            <div key="ru" class="" onClick="UIManager.changeLanguage('ru')"><img src='assets/shared/ui/lflg_ru.png' />Русский</div>
+                                                            <div key="th" class="" onClick="UIManager.changeLanguage('th')"><img src='assets/shared/ui/lflg_th.png' />ภาษาไทย</div>
+                                                            <div key="cn" class="" onClick="UIManager.changeLanguage('cn')"><img src='assets/shared/ui/lflg_cn.png' />简体中文</div>
+                                                            <div key="kr" class="" onClick="UIManager.changeLanguage('kr')"><img src='assets/shared/ui/lflg_kr.png' />한국어</div>
+                                                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex justify-center gap-big">
+        <div class="sidebars flex">
+            <div id="coe2_left_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+        <div id="content" class="flex flex-wrap gap-big align-center">
+            <div id="ui" class="full-width flex gap-big flex-columns">
+                <div class="uiLayout flex flex-wrap gap-big flex-columns flex-take"></div>
+                <div class="uiAdBanner flex flex-top-banner">
+                    <div id="coe2_top_banner_ad" sizes='[["320", "100"],["320", "50"]]' class="adspace flex align-center justify-center top-banner">Ad space</div>
+                </div>
+            </div>
+            <div id="output" class="full-width"><style>
+    .layout .done {
+        text-decoration: line-through;
+        opacity: 0.5;
+    }
+
+    .current {
+        color: aqua;
+    }
+
+    .messageBox {
+        margin: 0px;
+    }
+
+    .layout {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .layout ul {
+        list-style-type: none;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin: 0px;
+        padding: 0px 0px 0px 0px;
+    }
+
+    .layout ul li {
+        position: relative;
+        padding-left: 18px;
+    }
+
+    .layout ul li:before {
+        position: absolute;
+        content: '\2715';
+        color: red;
+        left: 0px;
+        top: 0px;
+    }
+
+    .layout ul li.done:before {
+        position: absolute;
+        content: '\2714';
+        color: green;
+        left: 0px;
+        top: 0px;
+    }
+
+    .layout ul li>ul {
+        padding: var(--spacing-small) 0px;
+    }
+
+    .layout ul li>ul>li {
+        font-size: 12px;
+        color: #BBB;
+    }
+
+    article {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-mediumx);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .hideCompletedTasks ul li.done {
+        display: none;
+    }
+
+    .toggleTasks:not(.active) {
+        opacity: 0.5;
+    }
+
+    span.poe1,
+    span.poe2 {
+        font-size: 11px;
+        line-height: 11px;
+        padding: var(--spacing-mini);
+        background: #191919;
+        font-weight: bold;
+        border-radius: 3px;
+    }
+
+    span.poe1:after {
+        content: "POE1";
+        color: var(--scourged-color) !important;
+    }
+
+    span.poe2:after {
+        content: "POE2";
+        color: var(--rare-color) !important;
+    }
+
+    @media (min-width: 700px) {
+        .layout {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1100px) {
+        .layout {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+</style>
+<h3>Roadmap</h3>
+
+<div class="messageBox">The current goal is a full release before POE2 1.0 to then allow for sunsetting the old version
+    before the next big
+    patch. Below is a list of what is left to do.</div>
+
+<br>
+
+<div class="flex justify-center gap">
+    <button onClick="toggleRoadmap(true)" class="game green toggleTasks">View completed tasks</button>
+    <button onClick="toggleRoadmap(false)" class="game red toggleTasks active">Hide completed tasks</button>
+</div>
+
+<br><br>
+
+<div class="layout hideCompletedTasks">
+    <article>
+        <h1>Modules</h1>
+        <ul class="base">
+            <li class="done">Crafting interface</li>
+            <li class="done">Emulator integration</li>
+            <li class="done">Calculator integration</li>
+            <li class="done">Simulator integration</li>
+            <li class="done">Data browser integration</li>
+            <li>Affinities integration</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Features</h1>
+        <ul class="base">
+            <li class="done">Legacy mode toggler</li>
+            <li class="done">Integrate reference texts</li>
+            <li class="done">Add UI setting to show reference texts or not</li>
+            <li>Crafting : make UI more responsive</li>
+            <li class="done">Optional fullscreen crafting interface</li>
+            <li class="done">Modify item (rarity, remove corruption etc)</li>
+            <li class="done">Emulator : spending overview</li>
+            <li class="done">Emulator : spending details</li>
+            <li class="done">Emulator : view actions history</li>
+            <li class="done">Emulator : item changes view on action</li>
+            <li class="done">Inventory : import all</li>
+            <li class="done">Inventory : delete all</li>
+            <li class="done">Item : auto-save</li>
+            <li class="done">Data browser : search</li>
+            <li class="done">Implement poe.ninja currency prices</li>
+            <li class="done">Patch selector</li>
+            <li class="done">Patch data comparer</li>
+            <li class="done">Import / Export User settings</li>
+            <li class="done">Path of Building Item Export</li>
+            <li class="done">Manually change modifier values on an item</li>
+            <li class="done">Manually change item quality</li>
+            <li class="done">Manually change item property values</li>
+            <li>Implement memory strands</li>
+            <li class="done">Compute pseudos (pdps, edps, tot resists, etc) on item output</li>
+            <li class="done">User setting option to toggle pseudo computing</li>
+            <li class="done">Allow for pastebin and gist importing</li>
+            <li class="done">Change item level for editable items</li>
+            <li class="done">Edit item implicit values</li>
+            <li>Implement a seperated emulator/calculator UI version as an option</li>
+            <li>Implement a more contrast heavy CSS theme that the user can toggle to in user settings.</li>
+            <li><span class='poe1'></span> Implement a "best bench block" suggestion in some way</li>
+            <li>Add trade search links to an item output with sliders and togglers for modifiers</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Data Browser</h1>
+        <ul>
+            <li class="done">Items</li>
+            <li class="done">Modifiers</li>
+            <li>Gems</li>
+            <li>Monsters</li>
+            <li>...</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Simulator integration <span class='current'>(Currently working on this)</span></h1>
+        <ul class="base">
+            <li class="done">Simulator configuration interface</li>
+            <li class="done">Step configuration interface</li>
+            <li class="done">Link configuration interface</li>
+            <li class="done">Save, load, new simulation functionality</li>
+            <li class="done">Create a simulation from the crafting setup</li>
+            <li class="done">Simulator worker</li>
+            <li class="done">Realtime mode</li>
+            <li class="done">Export/Import Simulation</li>
+            <li class="done">Export/Import entire simulation saved data</li>
+            <li class="done">Fullscreen interface implementation</li>
+            <li>Create a step from the crafting interface current setup</li>
+            <li class="done">Copy simulation</li>
+            <li>Debug mode</li>
+            <li class="done">Add an option to step configuration to set a step as a starting step</li>
+            <li class="done">Make it possible for a step to route back to a step that routed to it</li>
+            <li class="done">Fixed mode</li>
+            <li>Rule 10 Output</li>
+            <li>Action step mode : Condition check</li>
+            <li>Copy conditions from a route feature</li>
+            <li>Allow for requirements to check values as well instead of tiers only.</li>
+            <li>Allow for splitting work into multiple workers</li>
+            <li>Let the user default if they want <,<=,=,>=,> for the value comparison of a requirement. (Look into
+                    changing this to MIN-MAX to reflect the trade site interface)</li>
+            <li>Add the possibility to fail forward on a simulator action, setting up which route is the fail forward
+                route</li>
+            <li>Be able to change currency (chaos, div, exalt) for the base item cost.</li>
+            <li class="done">Distribution tables on result option</li>
+            <li class="done">Copy step feature</li>
+            <li class="done">Simulation results output
+                <ul>
+                    <li class="done">Items output</li>
+                    <li class="done">Cost breakdown</li>
+                </ul>
+            </li>
+            <li>Implement simulation presets</li>
+            <li>Simulation specific requirements
+                <ul>
+                    <li class="done">Pseudos and properties</li>
+                    <li class="done">Unrevealed/Veiled affixes</li>
+                    <li>Weighted sum support</li>
+                </ul>
+            </li>
+            <li>
+                Fixes, adjustments and bugs
+                <ul>
+                    <li class="done">Change starting item functionality</li>
+                    <li class="done">Add an optional textarea description field for steps</li>
+                    <li class="done">Refactor saved data to convert crafting method identifiers to permanent identifiers
+                    </li>
+                    <li class="done">Refactor saved data to convert omen identifiers to permanent identifiers</li>
+                    <li class="done">Refactor saved data to convert requirements identifiers to permanent identifiers
+                    </li>
+                    <li class="done">Make simulations accessible when no base is selected</li>
+                    <li>Add validation when changing start item to make sure the change is legal</li>
+                    <li class="done">Issue with "Simulate this outcome" from calculator where if we have a blank setup
+                        it will not
+                        take the latest item state (New body armour -> orb of alchemy -> switch to chaos orb -> set
+                        requirement -> simulate this outcome)</li>
+                    <li class="done">Make the simulator have default values (1) for things like open prefix/suffix when
+                        the user has
+                        none specified.</li>
+                    <li class="done">Make sure there is more error details bubbling to the user when the simulation
+                        stops.</li>
+                    <li>Optimize the simulator processor for execution speed.</li>
+                    <li><span class='poe2'></span>Allow a user to replace a rune so it does not fail when there is no
+                        space.</li>
+                </ul>
+            </li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Calculator Integration</h1>
+        <ul class="base">
+            <li>General
+                <ul>
+                    <li class="done">Fullscreen mode integration</li>
+                    <li class="done">Omen spending</li>
+                    <li class="done">Requirements<ul>
+                            <li class="done">Open affix / prefix / suffix</li>
+                            <li class="done">Number of affixes</li>
+                            <li class="done">>Add elevated modifiers to selector</li>
+                        </ul>
+                    </li>
+                    <li>Generation weights handling in calculations</li>
+                    <li class="done">Confidence level and user setting</li>
+                    <li class="done">"Emulate this outcome" button that runs the current calc setup in the simulator
+                        flow until it
+                        hits a success and stops, updating the item.</li>
+                    <li>Output the entire item instead of just the name when choosing an item.</li>
+                </ul>
+            </li>
+            <li>Path of Exile 1
+                <ul>
+                    <li class="done">Orb of Transmutation</li>
+                    <li class="done">Orb of Alteration</li>
+                    <li class="done">Orb of Augmentation, Foulborn Orb of Augmentation</li>
+                    <li class="done">Regal Orb, Foulborn Regal Orb</li>
+                    <li class="done">Orb of Alchemy</li>
+                    <li class="done">Chaos Orb, Veiled Chaos Orb</li>
+                    <li class="done">Exalted Orb, Veiled Exalted oRb, Foulborn Exalted Orb</li>
+                    <li class="done">Orb of Annulment</li>
+                    <li class="done">Orb of Scouring</li>
+                    <li>Divine Orb</li>
+                    <li>Blessed Orb</li>
+                    <li>Fracturing Orb</li>
+                    <li>Vaal Orb</li>
+                    <li>Tailoring Orb, Tempering Orb</li>
+                    <li>Sacred Orb</li>
+                    <li>Orb of Dominance</li>
+                    <li>Awakener's Orb</li>
+                    <li class="done">Shaper's, Elder's, Crusader's, Redeemer's, Hunter's and Warlord's Exalted Orb</li>
+                    <li class="done">Essences</li>
+                    <li class="done">Fossils</li>
+                    <li>Bloodstained Fossil</li>
+                    <li class="done">Fossil Optimizer</li>
+                    <li class="done">Harvest : Augment</li>
+                    <li>Harvest : Convert</li>
+                    <li class="done">Harvest : Reforge</li>
+                    <li class="done">Harvest : Reforge More/Less Likely</li>
+                    <li class="done">Harvest : Reforge Influence</li>
+                    <li>Harvest : Synthesise an Item</li>
+                    <li class="done">Beastcraft : Prefix to Suffix and Suffix to Prefix</li>
+                    <li class="done">Beastcraft : Add a Shaper, Elder, Redeemer, Hunter, Crusader and Warlord Modifier
+                        to an
+                        Item</li>
+                    <li>Beastcraft : Reroll a Synthesis Implicit</li>
+                    <li>Tainted Crafts</li>
+                    <li class="done">Eldritch Crafts</li>
+                    <li class="done">Generate a Magic and Rare Item</li>
+                    <li>Genesis Tree</li>
+                    <li>Unveil</li>
+                    <li>Metamethod : Alt+Aug</li>
+                    <li>Metamethod : Alt+Aug+Regal</li>
+                </ul>
+            </li>
+            <li>Path of Exile 2
+                <ul>
+                    <li class="done">Orb of Transmutation</li>
+                    <li class="done">Orb of Augmentation</li>
+                    <li class="done">Regal Orb</li>
+                    <li class="done">Orb of Alchemy</li>
+                    <li class="done">Chaos Orb</li>
+                    <li class="done">Exalted Orb</li>
+                    <li class="done">Orb of Annulment</li>
+                    <li>Divine Orb</li>
+                    <li>Fracturing Orb</li>
+                    <li>Vaal Orb</li>
+                    <li class="done">Essences</li>
+                    <li>Desecration</li>
+                    <li>Temple Crafts</li>
+                    <li class="done">Generate a Magic and Rare Item</li>
+                    <li>Reveal</li>
+                </ul>
+            </li>
+            <li>
+                Omens
+                <ul>
+                    <li>Omen of Dextral Alchemy</li>
+                    <li>Omen of Sinistral Alchemy</li>
+                    <li class="done">Omen of Dextral Coronation</li>
+                    <li class="done">Omen of Sinistral Coronation</li>
+                    <li class="done">Omen of Homogenising Coronation</li>
+                    <li class="done">Omen of Dextral Erasure</li>
+                    <li class="done">Omen of Sinistral Erasure</li>
+                    <li class="done">Omen of Whittling</li>
+                    <li class="done">Omen of Dextral Exaltation</li>
+                    <li class="done">Omen of Sinistral Exaltation</li>
+                    <li class="done">Omen of Homogenising Exaltation</li>
+                    <li class="done">Omen of Greater Exaltation</li>
+                    <li class="done">Omen of Catalysing Exaltation</li>
+                    <li class="done">Omen of Dextral Annulment</li>
+                    <li class="done">Omen of Sinistral Annulment</li>
+                    <li class="done">Omen of Light</li>
+                    <li>Omen of Greater Annulment</li>
+                    <li>Omen of Corruption</li>
+                    <li class="done">Omen of Dextral Crystallisation</li>
+                    <li class="done">Omen of Sinistral Crystallisation</li>
+                </ul>
+            </li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Emulator integration</h1>
+        <ul class="base">
+            <li>Recombinating
+                <ul>
+                    <li><span class='poe1'></span> Path of Exile 1 Recombinator</li>
+                    <li>Path of Exile 2 Recombinator (shared)</li>
+                </ul>
+            </li>
+            <li class="done">Unveil/Reveal method (to complement manual unveil/revealing and allow for simulation setup)
+            </li>
+            <li class="done"><span class='poe1'></span> Benchcrafting</li>
+            <li class="done">Vaal Orb (transform map, waystone corrupts)</li>
+            <li class="done"><span class='poe1'></span> Tailoring / Tempering Orb</li>
+            <li class="done"><span class='poe1'></span> Sacred Orb</li>
+            <li class="done"><span class='poe1'></span> Orb of Dominance</li>
+            <li class="done"><span class='poe1'></span> Harvest - Enchants</li>
+            <li class="done"><span class='poe1'></span> Harvest - Special - Reforge Influence</li>
+            <li class="done"><span class='poe1'></span> Harvest - Special - Change Influence</li>
+            <li><span class='poe1'></span> Bestiary - Imprint</li>
+            <li class="done"><span class='poe1'></span> Bestiary - Reroll a synthesis implicit</li>
+            <li class="done"><span class='poe1'></span> Bestiary - Add a metamod</li>
+            <li class="done"><span class='poe1'></span> Awakening Orb</li>
+            <li>Hinekora's Lock</li>
+            <li><span class='poe1'></span> Vendor recipees</li>
+            <li class="done"><span class='poe1'></span> Temple double corrupt</li>
+            <li class="done"><span class='poe1'></span> Harvest synthetize item</li>
+            <li class="done"><span class='poe1'></span> Tainted Catalyst</li>
+            <li class="done"><span class='poe2'></span> Handle Mark of the Abyssal Lord</li>
+            <li><span class='poe1'></span> Reflecting mist</li>
+            <li><span class='poe1'></span> Tangled fossil handling</li>
+            <li><span class='poe1'></span><span class='poe2'></span> Genesis tree</li>
+            <li><span class='poe1'></span> Implement Originator Map affix generation minimums (at least 1 nightmare
+                prefix and suffix)</li>
+            <li>Enable backspace as a key to undo actions</li>
+            <li>Implement Meta-methods that combine sequences of commonly used actions (ex: Annul+Aug, Alt+Aug, etc)
+            </li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Fixes, adjustments and bugs</h1>
+        <ul class="base">
+            <li class="done">Implement limitations and a user setting to bypass them when adding modifiers from the pool
+                <ul>
+                    <li class="done">User setting</li>
+                    <li class="done">Influence check and automatically add influence if possible</li>
+                    <li class="done">Modifier type limit check</li>
+                </ul>
+            </li>
+            <li class="done">Item importation<ul>
+                    <li class="done">Import properties (values)</li>
+                    <li class="done">Import enchantments</li>
+                    <li class="done"><span class='poe1'></span> Handle cluster jewels</li>
+                    <li class="done"><span class='poe1'></span> Handle synth mods</li>
+                </ul>
+            </li>
+            <li class="done">Apply modifiers to local item properties</li>
+            <li><span class='poe1'></span> Fix cluster jewel notable descriptions opacity when crossed out</li>
+            <li class="done">Omen of Light : extend to remove "desecrated" modifiers and not only unrevealed</li>
+            <li class="done">Issue with socketables that have more than one value / range of values</li>
+            <li class="done">Strongboxes : should not be able to save to inventory</li>
+            <li class="done">CTRL-Z when reverting adding an influence should rebuild</li>
+            <li class="done">Track desecrated mods from normal explicits pool</li>
+            <li class="done"><span class='poe1'></span> Handle special breach rings</li>
+            <li class="done"><span class='poe2'></span> Handle breach ring quality</li>
+            <li>Add legacy labels to legacy crafting methods</li>
+            <li>Issue where regal method is set to reroll as to not block affixes from calc output but when trying to
+                represent
+                omens it doesnt work</li>
+            <li>Optimize calculator BUILD (slow in poe1 because of mod volume)</li>
+            <li class="done"><span class='poe2'></span> Break runes into subgroups (lesser, normal, greater,
+                exceptional)</li>
+            <li class="done"><span class='poe1'></span> Handle Astrolable Amulet properly</li>
+            <li class="done">Apply flask modifiers to relevant item properties</li>
+            <li class="done"><span class='poe2'></span> Parse Crossbow Reload Time property</li>
+            <li><span class='poe2'></span> Fix Focii and Quarterstaff image ratios</li>
+            <li>When changing to another item of the same class, it does not appear as if the method states are being
+                updated</li>
+            <li class="done">When toggling between method groups, the cursor of the previously selected method from a
+                group
+                is not
+                visible</li>
+            <li class="done">Handle implicit overwrites (When synthesising, corrupting, etc) taking into account the
+                "local_implicit_mod_cannot_be_changed" stat</li>
+            <li class="done">Handle heist enchantment effects on explicits</li>
+            <li>Handle harvest enchantment effect on properties properly (1% per x quality)</li>
+            <li class="done">Handle local modifier effect on attribute requirements</li>
+            <li>Issue with essences having some tiers not in the same group are the others (generation tags absent on
+                the
+                last tier)</li>
+            <li class="done">Handle Jewellery Implicit Modifier Magnitudes effect (Focused Amulet etc)</li>
+            <li class="done">Apply unique identifiers to crafting methods for legacy durability</li>
+            <li class="done">Make it so it does'nt default on special bases when selecting a base</li>
+            <li class="done">Find a way to handle having a legacy item in inventory</li>
+            <li>Fix issue where changing item base with a filter selection keeps the filter on but the filter selector
+                is not set right</li>
+            <li>Fix issue where item computed pseudo values are pre-quality</li>
+            <li><span class='poe1'></span> Importing a talisman is doubling the enchantment modifier</li>
+            <li>Prioritize META requirements when searching in the requirement drop-down</li>
+            <li class="done"><span class='poe2'></span> Make it so its possible to reveal modifiers when an item is
+                corrupted.</li>
+            <li>Make the selectors more clear in regards to what is selected and remove grayscale where applicable</li>
+            <li>Change the modifier options modal to a context menu</li>
+            <li>Add modifier tags to modifiers in the requirement drop-downs</li>
+            <li>Add intangibility value to PoB export</li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Data parsing</h1>
+        <ul class="base">
+            <li class="done">Flask mods : issue with enchantment -1 per use toggling for some explicits</li>
+            <li><span class='poe1'></span> There is an issue with the Body Armour Exarch gain frenzy charge every second
+                modifier where the
+                tier order is reversed. This probably extends to alot more modifiers, look into a solution for this.
+            </li>
+            <li class="done"><span class='poe1'></span> Betrayal master exclusive drop mods (ex tag:
+                elreon_veiled_prefix)</li>
+            <li class="done"><span class='poe1'></span> Incursion modifiers (manual mappings)</li>
+            <li class="done"><span class='poe1'></span> Synth modifiers</li>
+            <li class="done"><span class='poe2'></span> Waystones</li>
+            <li class="done"><span class='poe1'></span> Maps have issues with pack size mod always being there</li>
+            <li class="done"><span class='poe1'></span> Clusters are missing corrupted modifiers</li>
+            <li class="done"><span class='poe1'></span> Necropolis modifiers</li>
+            <li class="done"><span class='poe1'></span> Tinctures have double items with no implicits</li>
+            <li class="done"><span class='poe1'></span> Amulets showing eater/exarch implicits and should not</li>
+            <li class="done"><span class='poe1'></span> Heist Body armour and weapon enchantments</li>
+            <li class="done"><span class='poe1'></span> Harvest enchantments</li>
+            <li class="done"><span class='poe1'></span> Abyss jewel issue (0% chance to Avoid being Chilled, (20-25)%
+                chance to Avoid being
+                Frozen)</li>
+            <li><span class='poe1'></span> Primordial Remnant quant/rarity mod not showing</li>
+            <li class="done"><span class='poe1'></span> Logbook and memory implicits showing for all mapping bases</li>
+            <li><span class='poe1'></span> Find out where the weights for Grasping Mail Breach modifiers are officially
+                located</li>
+            <li><span class='poe1'></span> Import glove enchantments obtain through Katakohi's Ducat</li>
+            <li class="done"><span class='poe1'></span> Invitations all mods have 0% increased Pack Size in your Maps
+                and they have
+                logbook/memory
+                implicits
+                when
+                they shouldnt as well, corrutps seem off also</li>
+            <li><span class='poe1'></span> Import Original Maps and their modifiers properly.</li>
+            <li><span class='poe1'></span> Some issues with strongbox modifiers, "Casts a Lightning Storm" gets grouped
+                under "Casts a Firestorm". "Guarded by 2 packs of Magic Monsters" should show 3 or 2-3 instead of 2.
+            </li>
+        </ul>
+    </article>
+
+    <article>
+        <h1>Misc</h1>
+        <ul>
+            <li class="done">Custom user price setting</li>
+            <li>Path of Exile Sign-on for character item import</li>
+            <li>Bulk pricing setting and toggle</li>
+            <li class="done">Patreon Sign-on</li>
+            <li>Speed up fossil optimizer even more</li>
+            <li>Add blight ring enchantment required oils</li>
+            <li class="done">Add a notice for modifier type pools for when weightings are not know (synth mods)</li>
+            <li class="done">Compute map properties (as pseudos probably) like quantity/rarity and the nightmare stats
+                like more
+                scarabs/maps/etc as well as making these selectable as a pseudo requirement for the simulator.</li>
+        </ul>
+    </article>
+</div>
+
+<script language="javascript">
+    function toggleRoadmap(delta) {
+        if (delta) {
+            document.querySelector("button.toggleTasks.green").classList.add("active");
+            document.querySelector("button.toggleTasks.red").classList.remove("active");
+            document.querySelector("div.layout").classList.remove("hideCompletedTasks");
+        } else {
+            document.querySelector("button.toggleTasks.red").classList.add("active");
+            document.querySelector("button.toggleTasks.green").classList.remove("active");
+            document.querySelector("div.layout").classList.add("hideCompletedTasks");
+        }
+    }
+</script></div>
+                        <div class="flex justify-center full-width">
+                <div id="coe2_footer_ad" sizes='[["970", "250"],["970", "90"],["728", "90"],["300", "250"],["320", "50"],["320", "100"]]' class="adspace flex align-center justify-center">Ad space</div>
+            </div>
+        </div>
+        <div class="sidebars flex">
+            <div id="coe2_right_rails_ad" sizes='[["300", "600"],["300", "250"],["160", "600"]]' class="adspace flex align-center justify-center">Ad space</div>
+        </div>
+    </main>
+
+    <footer class="text-center flex flex-columns gap">
+        <nav id="bottomMenu" class="topMenu flex flex-grow justify-center gap">
+            <a href="privacy" class="privacy">Privacy</a>
+            <a href="developers" class="developpers">Developers</a>
+        </nav>
+        <div class="disclaimer">craftofexile.com is not affiliated with or endorsed by Grinding Gear Games</div>
+    </footer>
+
+    <template id="settingsTemplate">
+        <div class="settings">
+            <div class="holder">
+                <div class="wrapper med-shadow">
+
+                </div>
+            </div>
+            <div class="contentTemplate hidden">
+                <h1></h1>
+                <div class="content grid gap"></div>
+            </div>
+            <svg viewBox="0 0 512 512" onClick="document.location='settings'">
+                <use href="assets/shared/ui/settings.svg#settings"></use>
+            </svg>
+        </div>
+    </template>
+
+    <template id="noticeTemplate">
+        <div class="notice flex flex-columns">
+            <div class="header flex gap align-center"><label class="flex-grow"></label><button class="closer small" onClick="Notices.close(this)">Close</button></div>
+            <div class="message flex gap align-center">
+                <div class="icon"></div>
+                <div class="text"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="snackbarTemplate">
+        <div class="snackbar med-shadow flex flex-columns text-center">
+            <label></label>
+            <div class="message"></div>
+        </div>
+    </template>
+
+    <template id="selectorTemplate">
+        <div class="selector">
+            <label class="flex gap align-center">
+                <div class="toggler noselect">
+                    <div delta="1">Show</div>
+                    <div delta="0">Hide</div>
+                </div>
+            </label>
+            <div class="subset"></div>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="dropdownTemplate">
+        <div class="dropdown inline-block">
+            <label class="flex gap align-center">
+                <div class="output flex align-center gap-sml flex-grow">
+                    <div class="current flex-grow flex align-center gap"></div>
+                    <div class="placeholder flex-grow"></div>
+                    <div class="image noselect">
+                        <img src="assets/shared/ui/expand_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/expand_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/expand_active.webp" class="active" />
+                    </div>
+                </div>
+                <div class="editing flex align-center gap flex-grow">
+                    <div class="flex-grow"><input type="text" /></div>
+                    <div class="image closer noselect">
+                        <img src="assets/shared/ui/close_hover.webp" class="hovered" />
+                        <img src="assets/shared/ui/close_idle.webp" class="idle" />
+                        <img src="assets/shared/ui/close_active.webp" class="active" />
+                    </div>
+                </div>
+            </label>
+            <ul class="med-shadow"></ul>
+        </div>
+    </template>
+
+    <template id="togglerTemplate">
+        <div class="toggler">
+            <label></label>
+            <ul></ul>
+        </div>
+    </template>
+
+    <template id="itemTemplate">
+        <div class="item">
+            <div class="flex flex-columns">
+                <div class="header flex">
+                    <div class="side left flex align-center"></div>
+                    <div class="center flex-grow">
+                        <div class="name"></div>
+                        <div class="label"></div>
+                    </div>
+                    <div class="side right flex align-center justify-end"></div>
+                </div>
+                <div class="output flex gap align-center justify-center">
+                    <div class="image"></div>
+                    <div class="text"></div>
+                    <div class="destroyed">
+                        <div class="message">Item has been destroyed</div>
+                        <div class="flex editButtonZone gap align-center justify-center"><button class="small button restore">Restore</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="inputTemplate">
+        <div class="input">
+            <div>
+                <input type="text" class="med-shadow" />
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="textAreaTemplate">
+        <div class="textarea">
+            <div>
+                <textarea class="med-shadow"></textarea>
+                <label></label>
+                <div class="empty noselect">X</div>
+            </div>
+        </div>
+    </template>
+
+    <template id="itemDetailsTemplate">
+        <div class="itemDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Class details</h2>
+                </div>
+                <div class="classData"></div>
+            </div>
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Item details</h2>
+                </div>
+                <div class="itemData"></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="settingsImporterTemplate">
+        <div id="settingsImporterZone" class="content importerZone">
+            <div class="importer flex flex-columns gap">
+                <textarea id="settingsImporterInput" placeholder="Paste your data here"></textarea>
+                <button onClick="user.importSettingsCommit()">Proceed</button>
+            </div>
+            <div class="errors flex flex-columns gap hidden">
+                <h2>One or more issues encountered while attempting import</h2>
+                <div class="list flex flex-columns gap"></div>
+                <button onClick="user.importSettingsReturn()">Return</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="changePatchTemplate">
+        <div id="changePatchZone" class="content flex flex-columns gap">
+        </div>
+    </template>
+
+    <template id="modifierDetailsTemplate">
+        <div class="modifierDetailsModal details flex gap-big">
+            <div class="flex flex-columns">
+                <div>
+                    <h2>Group details</h2>
+                </div>
+                <div class="groupDetails"></div>
+            </div>
+            <div class="flex flex-columns modifiersZone">
+                <div>
+                    <h2>Modifier details</h2>
+                </div>
+                <div class="modifierDetails"></div>
+            </div>
+        </div>
+    </template>
+
+    <dialog id="noticeDialog" class="over-shadow"></dialog>
+
+    
+    <script type="text/javascript">
+        $(document).ready(function() {
+            coeInit();
+                    });
+    </script>
+</body>
+
+</html>
