@@ -2,7 +2,8 @@
 // on it now, and which of its modifiers the target must keep.
 
 import type { Ctx, Item } from '../engine/types';
-import { tierLabel, type Family } from './families';
+import { tierLabel, tierLabelEn, type Family } from './families';
+import { ruText } from '../engine/ruText';
 
 /** What the parser saw besides the modifiers (display only). */
 export interface ItemInfo {
@@ -43,14 +44,14 @@ export function CurrentItem({ ctx, families, item, info, unkept, setUnkept, onCl
         const keep = !unkept.includes(m.id);
         return (
           <li key={m.id} className={(m.fr ? 'fractured ' : '') + (m.de ? 'desecrated' : '')}>
-            <label className="inline">
+            <label className="inline" title={f ? tierLabelEn(f, d!) : d!.x}>
               <input
                 type="checkbox"
                 checked={keep}
                 onChange={() => setUnkept(keep ? [...unkept, m.id] : unkept.filter((x) => x !== m.id))}
                 title="Сохранить этот мод в цели"
               />{' '}
-              {f ? tierLabel(f, d!) : d!.x.replace(/\n/g, ' / ')}
+              {f ? tierLabel(f, d!) : ruText(d!.x)}
               {m.fr ? ' · расколот' : ''}
               {m.de ? ' · очернён' : ''}
             </label>

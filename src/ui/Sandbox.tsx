@@ -6,7 +6,8 @@ import { desecrationOptions, isValid, sample } from '../engine/actions';
 import { actionCost, actionTitleRu, canDesecrate, omenRu } from '../engine/currency';
 import { essencesForBase } from '../engine/essences';
 import type { Action, ActionKind, BoneTier, Ctx, FluxKind, Item, ModDef, OmenName, OrbTier, Prices } from '../engine/types';
-import { tierLabel, type Family } from './families';
+import { tierLabel, tierLabelEn, type Family } from './families';
+import { ruText } from '../engine/ruText';
 import { fmtCost, type DisplayCurrency } from './format';
 
 interface Props {
@@ -86,9 +87,9 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
     for (const m of after.mods) {
       const k = b.indexOf(m.id);
       if (k >= 0) b.splice(k, 1);
-      else parts.push('добавлен: ' + (ctx.byId.get(m.id)?.x.replace(/\n/g, ' / ') ?? m.id));
+      else parts.push('добавлен: ' + ((ctx.byId.get(m.id) ? ruText(ctx.byId.get(m.id)!.x) : m.id)));
     }
-    for (const id of b) parts.push('убран: ' + (ctx.byId.get(id)?.x.replace(/\n/g, ' / ') ?? id));
+    for (const id of b) parts.push('убран: ' + ((ctx.byId.get(id) ? ruText(ctx.byId.get(id)!.x) : id)));
     const frBefore = before.mods.filter((m) => m.fr).length;
     if (after.mods.filter((m) => m.fr).length > frBefore) parts.push('мод расколот');
     return parts.join('; ') || (after.rarity !== before.rarity ? `теперь ${after.rarity}` : 'без изменений');
@@ -168,7 +169,10 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
             const f = famByFam.get(d.f);
             return (
               <div key={i} className={'sbmod' + (m.fr ? ' fractured' : '') + (m.de ? ' desecrated' : '')}>
-                <span className="muted small">{d.s === 'p' ? 'П' : 'С'}</span> {f ? tierLabel(f, d) : d.x}
+                <span className="muted small" title={f ? tierLabelEn(f, d) : d.x}>
+                  {d.s === 'p' ? 'П' : 'С'}
+                </span>{' '}
+                <span title={f ? tierLabelEn(f, d) : d.x}>{f ? tierLabel(f, d) : ruText(d.x)}</span>
                 {m.fr ? ' · расколот' : ''}
                 {m.de ? ' · очернён' : ''}
               </div>
@@ -192,7 +196,7 @@ export function Sandbox({ ctx, families, currency, prices }: Props) {
             <b>Очернение: выберите один из раскрытых модов</b>
             {choice.options.map((m) => (
               <button key={m.id} className="fam" onClick={() => pickDesecrated(m)}>
-                {m.s === 'p' ? 'П' : 'С'}: {m.x.replace(/\n/g, ' / ')} (ур. {m.l})
+                {m.s === 'p' ? 'П' : 'С'}: {ruText(m.x)} (ур. {m.l})
               </button>
             ))}
           </div>

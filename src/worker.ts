@@ -8,6 +8,7 @@ import { analyze, buildCtx, modOf } from './engine/item';
 import { Planner } from './engine/planner';
 import { explainPlan, makeRng, simulate, type PlanStep } from './engine/simulate';
 import { STRATEGIES } from './engine/strategies';
+import { ruText, setRuDisplay } from './engine/ruText';
 import type { BaseDef, Ctx, Item, ModDef } from './engine/types';
 
 let mods: ModDef[] = [];
@@ -40,7 +41,7 @@ function plannerFor(setup: Setup, strategyId: string): Planner {
 function modsText(ctx: Ctx, item: Item): string[] {
   return item.mods.map((m) => {
     const d = modOf(ctx, m);
-    return `${d.s === 'p' ? 'П' : 'С'}: ${d.x.replace(/\n/g, ' / ')} (ур. ${d.l})${m.fr ? ' [расколот]' : ''}${m.de ? ' [очернён]' : ''}`;
+    return `${d.s === 'p' ? 'П' : 'С'}: ${ruText(d.x)} (ур. ${d.l})${m.fr ? ' [расколот]' : ''}${m.de ? ' [очернён]' : ''}`;
   });
 }
 
@@ -107,7 +108,7 @@ function describeOutcome(planner: Planner, before: Item, after: Item): OutcomeVi
   }
   for (const id of removed) {
     const m = ctx.byId.get(id)!;
-    parts.push(`− убран: ${m.x.replace(/\n/g, ' / ')}`);
+    parts.push(`− убран: ${ruText(m.x)}`);
   }
   if (after.rarity === 'normal' && before.rarity !== 'normal') return 'Новая обычная база';
   return parts.join('; ') || 'Без изменений';
@@ -154,6 +155,7 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
       case 'init':
         mods = msg.mods;
         bases = new Map(msg.bases.map((b) => [b.id, b]));
+        setRuDisplay(msg.ru);
         planners.clear();
         post({ type: 'ready' });
         break;

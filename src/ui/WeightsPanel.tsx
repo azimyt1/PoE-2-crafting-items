@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DEFAULT_WEIGHT } from '../engine/item';
-import { tierLabel, type Family } from './families';
+import { famMatches, tierLabel, tierLabelEn, type Family } from './families';
 
 interface Props {
   families: Family[];
@@ -17,7 +17,7 @@ interface Props {
 export function WeightsPanel({ families, weights, setWeights, community, group, builtAt }: Props) {
   const [q, setQ] = useState('');
   const [json, setJson] = useState('');
-  const list = families.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
+  const list = families.filter((f) => famMatches(f, q));
   return (
     <section className="card">
       <h2>Веса модов</h2>
@@ -33,6 +33,13 @@ export function WeightsPanel({ families, weights, setWeights, community, group, 
           </a>{' '}
           (группа «{group}», тиров с весом: {Object.keys(community).length}{builtAt ? `, обновлены ${new Date(builtAt).toLocaleDateString('ru-RU')}` : ''}).
           Модам без известного веса (например, модам лордов Бездны) стоит вес <b>{DEFAULT_WEIGHT}</b>.
+        </p>
+      ) : null}
+      {group ? (
+        <p className="muted small">
+          Вес 1000 у большинства тиров — это нормально: так считает сообщество. Меньше вес (100–500) обычно у лучших, редких тиров. В
+          списке только моды, которые вообще могут выпасть на этой базе (у каждой группы баз свой набор), по-русски; английский
+          оригинал — при наведении.
         </p>
       ) : (
         <p>
@@ -53,12 +60,12 @@ export function WeightsPanel({ families, weights, setWeights, community, group, 
       <div className="weights">
         {list.map((f) => (
           <details key={f.fam}>
-            <summary>
+            <summary title={f.nameEn}>
               {f.side === 'p' ? 'П' : 'С'}: {f.name}
               {f.tiers.some((t) => t.id in weights) ? ' · изменено' : ''}
             </summary>
             {f.tiers.map((t) => (
-              <label key={t.id} className="weight" title={t.id}>
+              <label key={t.id} className="weight" title={`${tierLabelEn(f, t)} (${t.id})`}>
                 <span className="small">{tierLabel(f, t)}</span>
                 <input
                   type="number"

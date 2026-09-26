@@ -13,6 +13,7 @@ import { Tracker } from './ui/Tracker';
 import { PricesPanel, type PricesFile } from './ui/PricesPanel';
 import { WeightsPanel } from './ui/WeightsPanel';
 import { Sandbox } from './ui/Sandbox';
+import { setRuDisplay } from './engine/ruText';
 import { CurrentItem, type ItemInfo } from './ui/CurrentItem';
 import { HowItWorks } from './ui/HowItWorks';
 import { WorkerClient } from './ui/workerClient';
@@ -147,11 +148,12 @@ export default function App() {
         } catch {
           essencesFile = null;
         }
+        setRuDisplay(ru?.display);
         setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile, essences: essencesFile });
         setPricesFile(pricesFile);
         const c = new WorkerClient();
         client.current = c;
-        await c.init(mods, bases);
+        await c.init(mods, bases, ru?.display);
         setReady(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));

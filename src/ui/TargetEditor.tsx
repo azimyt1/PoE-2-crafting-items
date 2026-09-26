@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TargetReq } from '../engine/types';
-import { tierLabel, type Family } from './families';
+import { famMatches, tierLabel, tierLabelEn, type Family } from './families';
+import { ruText } from '../engine/ruText';
 
 interface Props {
   families: Family[];
@@ -28,7 +29,7 @@ const GROUPS = [
 export function reqLabel(f: Family, minLevel: number): string {
   const ok = f.tiers.filter((t) => t.l >= minLevel);
   const worst = ok[ok.length - 1];
-  return `${f.name} — от T${ok.length} (${worst ? worst.x.replace(/\n/g, ' / ') : '?'})`;
+  return `${f.name} — от T${ok.length} (${worst ? ruText(worst.x) : '?'})`;
 }
 
 export function TargetEditor({
@@ -47,7 +48,7 @@ export function TargetEditor({
   const [q, setQ] = useState('');
   const byFam = new Map(families.map((f) => [f.fam, f]));
   const chosen = new Set(reqs.map((r) => r.fam));
-  const filter = (f: Family) => !chosen.has(f.fam) && (!q || f.name.toLowerCase().includes(q.toLowerCase()));
+  const filter = (f: Family) => !chosen.has(f.fam) && famMatches(f, q);
   const prefixes = families.filter((f) => f.side === 'p' && filter(f));
   const suffixes = families.filter((f) => f.side === 's' && filter(f));
   const main = reqs.filter((r) => !r.group);
@@ -74,7 +75,7 @@ export function TargetEditor({
       <h3>{title}</h3>
       <div className="famlist">
         {list.map((f) => (
-          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '') + (f.essence ? ' essence' : '')} onClick={() => add(f)} title="Добавить в цель">
+          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '') + (f.essence ? ' essence' : '')} onClick={() => add(f)} title={`${f.nameEn}\nНажмите, чтобы добавить в цель`}>
             <span>{f.name}</span>
             <span className="muted small">
               {f.tiers.length} тир. · макс. ур. {f.tiers[0].l}
@@ -110,11 +111,11 @@ export function TargetEditor({
               return (
                 <tr key={r.fam}>
                   <td>{r.side === 'p' ? 'Префикс' : 'Суффикс'}</td>
-                  <td>{f.name}</td>
+                  <td title={f.nameEn}>{f.name}</td>
                   <td>
                     <select value={r.minLevel} onChange={(e) => setTier(i, +e.target.value)}>
                       {f.tiers.map((t) => (
-                        <option key={t.id} value={t.l}>
+                        <option key={t.id} value={t.l} title={tierLabelEn(f, t)}>
                           {tierLabel(f, t)}
                         </option>
                       ))}

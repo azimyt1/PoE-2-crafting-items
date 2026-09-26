@@ -7,6 +7,8 @@ import type { BaseDef, ItemMod, ModDef, Rarity, Side } from './types';
 export interface RuData {
   /** Russian line template -> English line template */
   templates: Record<string, string>;
+  /** English line template -> Russian line for display */
+  display?: Record<string, string>;
   /** Russian base name -> English base name */
   bases: Record<string, string>;
 }

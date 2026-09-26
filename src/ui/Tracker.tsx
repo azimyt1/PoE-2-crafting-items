@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Advice, Setup } from '../api';
 import { STRATEGIES } from '../engine/strategies';
 import type { Ctx, Item, ItemMod, Prices, Rarity } from '../engine/types';
-import { tierLabel, type Family } from './families';
+import { famMatches, tierLabel, tierLabelEn, type Family } from './families';
+import { ruText } from '../engine/ruText';
 import { fmtCost, fmtPct, type DisplayCurrency } from './format';
 import { PlanSteps } from './Results';
 import type { WorkerClient } from './workerClient';
@@ -91,8 +92,8 @@ export function Tracker(p: Props) {
     if (sameItem(next, item)) return;
     const before = new Set(item.mods.map((m) => m.id));
     const after = new Set(next.mods.map((m) => m.id));
-    const added = next.mods.filter((m) => !before.has(m.id)).map((m) => ctx.byId.get(m.id)?.x.replace(/\n/g, ' / ') ?? m.id);
-    const removed = item.mods.filter((m) => !after.has(m.id)).map((m) => ctx.byId.get(m.id)?.x.replace(/\n/g, ' / ') ?? m.id);
+    const added = next.mods.filter((m) => !before.has(m.id)).map((m) => (ctx.byId.get(m.id) ? ruText(ctx.byId.get(m.id)!.x) : m.id));
+    const removed = item.mods.filter((m) => !after.has(m.id)).map((m) => (ctx.byId.get(m.id) ? ruText(ctx.byId.get(m.id)!.x) : m.id));
     const diff = [...added.map((x) => '+ ' + x), ...removed.map((x) => '− ' + x)].join('; ') || 'изменена редкость';
     const kind = inferKind(item, next);
     const matchesAdvice = !!(kind && advice?.action && kind.split('|').includes(advice.action.kind));
@@ -130,7 +131,7 @@ export function Tracker(p: Props) {
   const count = { p: 0, s: 0 };
   for (const m of item.mods) count[ctx.byId.get(m.id)!.s]++;
   const addable = p.families.filter(
-    (f) => !onItem.has(f.fam) && count[f.side] < cap[f.side] && (!q || f.name.toLowerCase().includes(q.toLowerCase())),
+    (f) => !onItem.has(f.fam) && count[f.side] < cap[f.side] && famMatches(f, q),
   );
   const selFam = famByFam.get(famSel);
 
@@ -215,7 +216,7 @@ export function Tracker(p: Props) {
                     {f ? (
                       <select value={m.id} onChange={(e) => patchMod(i, { id: e.target.value })}>
                         {f.tiers.map((t) => (
-                          <option key={t.id} value={t.id}>
+                          <option key={t.id} value={t.id} title={tierLabelEn(f, t)}>
                             {tierLabel(f, t)}
                           </option>
                         ))}
@@ -249,7 +250,7 @@ export function Tracker(p: Props) {
             <select value={famSel} onChange={(e) => setFamSel(e.target.value)}>
               <option value="">— выберите мод —</option>
               {addable.map((f) => (
-                <option key={f.fam} value={f.fam}>
+                <option key={f.fam} value={f.fam} title={f.nameEn}>
                   {f.side === 'p' ? 'П' : 'С'}: {f.name}
                 </option>
               ))}
@@ -257,7 +258,7 @@ export function Tracker(p: Props) {
             {selFam && (
               <select value={tierSel} onChange={(e) => setTierSel(e.target.value)}>
                 {selFam.tiers.map((t) => (
-                  <option key={t.id} value={t.id}>
+                  <option key={t.id} value={t.id} title={tierLabelEn(selFam, t)}>
                     {tierLabel(selFam, t)}
                   </option>
                 ))}

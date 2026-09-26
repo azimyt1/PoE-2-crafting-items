@@ -62,7 +62,7 @@ export interface Advice {
 }
 
 export type WorkerRequest =
-  | { type: 'init'; mods: ModDef[]; bases: BaseDef[] }
+  | { type: 'init'; mods: ModDef[]; bases: BaseDef[]; ru?: Record<string, string> }
   | { type: 'evaluate'; id: number; setup: Setup; trials: number; strategyIds?: string[]; start?: Item }
   | { type: 'advise'; id: number; setup: Setup; strategyId: string; item: Item; trials: number }
   | { type: 'roll'; id: number; setup: Setup; strategyId: string; item: Item; action: Action; seed: number };

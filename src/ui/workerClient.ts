@@ -22,8 +22,8 @@ export class WorkerClient {
     this.worker.onmessage = (ev: MessageEvent<WorkerResponse>) => this.onMessage(ev.data);
   }
 
-  init(mods: ModDef[], bases: BaseDef[]): Promise<void> {
-    this.send({ type: 'init', mods, bases });
+  init(mods: ModDef[], bases: BaseDef[], ru?: Record<string, string>): Promise<void> {
+    this.send({ type: 'init', mods, bases, ...(ru ? { ru } : {}) });
     return this.readyPromise;
   }
 
