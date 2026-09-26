@@ -21,7 +21,7 @@ function post(msg: WorkerResponse) {
 function ctxFor(setup: Setup): Ctx {
   const base = bases.get(setup.baseId);
   if (!base) throw new Error('База не найдена');
-  return buildCtx({ base, ilvl: setup.ilvl, mods, prices: setup.prices, baseCost: setup.baseCost, weightOverrides: setup.weights });
+  return buildCtx({ base, ilvl: setup.ilvl, mods, prices: setup.prices, baseCost: setup.baseCost, weightOverrides: setup.weights, essences: setup.essences });
 }
 
 function plannerFor(setup: Setup, strategyId: string): Planner {

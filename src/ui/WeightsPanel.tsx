@@ -4,11 +4,17 @@ import { tierLabel, type Family } from './families';
 
 interface Props {
   families: Family[];
+  /** the user's own weights */
   weights: Record<string, number>;
   setWeights: (w: Record<string, number>) => void;
+  /** Craft of Exile weights for this base */
+  community: Record<string, number>;
+  /** Craft of Exile base group, null if it has no known weights */
+  group: string | null;
+  builtAt?: string;
 }
 
-export function WeightsPanel({ families, weights, setWeights }: Props) {
+export function WeightsPanel({ families, weights, setWeights, community, group, builtAt }: Props) {
   const [q, setQ] = useState('');
   const [json, setJson] = useState('');
   const list = families.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
@@ -17,12 +23,26 @@ export function WeightsPanel({ families, weights, setWeights }: Props) {
       <h2>Веса модов</h2>
       <p>
         Вес определяет, как часто мод выпадает: шанс = вес мода / сумма весов всех модов, которые могут выпасть. В файлах клиента PoE 2
-        настоящие веса скрыты (там только «может выпасть / не может»). Поэтому по умолчанию всем модам стоит одинаковый вес{' '}
-        <b>{DEFAULT_WEIGHT}</b>. Это главный источник неточности расчёта.
+        настоящих весов нет (там только «может выпасть / не может»), поэтому берём веса, которые сообщество измерило экспериментально.
       </p>
+      {group ? (
+        <p>
+          Для этой базы используются веса{' '}
+          <a href="https://www.craftofexile.com/weightings?game=poe2" target="_blank" rel="noreferrer">
+            Craft of Exile
+          </a>{' '}
+          (группа «{group}», тиров с весом: {Object.keys(community).length}{builtAt ? `, обновлены ${new Date(builtAt).toLocaleDateString('ru-RU')}` : ''}).
+          Модам без известного веса (например, модам лордов Бездны) стоит вес <b>{DEFAULT_WEIGHT}</b>.
+        </p>
+      ) : (
+        <p>
+          Для этой базы у Craft of Exile пока нет весов, поэтому всем модам стоит одинаковый вес <b>{DEFAULT_WEIGHT}</b>. Это главный
+          источник неточности расчёта.
+        </p>
+      )}
       <p className="muted small">
-        Сообщество оценивает веса экспериментально (например, Craft of Exile и poe2db). Если у вас есть такие данные, впишите их ниже или
-        вставьте JSON вида {'{"IncreasedLife8": 250, "FireResist7": 600}'} (ключ — внутренний id мода, он виден в подсказке).
+        Любой вес можно поправить ниже или вставить JSON вида {'{"IncreasedLife8": 250, "FireResist7": 600}'} (ключ — внутренний id мода,
+        он виден в подсказке). Ваши веса важнее весов Craft of Exile.
       </p>
       <div className="row">
         <input className="search" placeholder="Поиск мода" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -43,11 +63,11 @@ export function WeightsPanel({ families, weights, setWeights }: Props) {
                 <input
                   type="number"
                   min={0}
-                  value={weights[t.id] ?? DEFAULT_WEIGHT}
+                  value={weights[t.id] ?? community[t.id] ?? DEFAULT_WEIGHT}
                   onChange={(e) => {
                     const v = parseFloat(e.target.value);
                     const next = { ...weights };
-                    if (Number.isFinite(v) && v !== DEFAULT_WEIGHT) next[t.id] = v;
+                    if (Number.isFinite(v) && v !== (community[t.id] ?? DEFAULT_WEIGHT)) next[t.id] = v;
                     else delete next[t.id];
                     setWeights(next);
                   }}

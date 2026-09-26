@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "data": "node scripts/build-data.mjs",
-    "prices": "node scripts/fetch-prices.mjs"
+    "prices": "node scripts/fetch-prices.mjs",
+    "coe": "node scripts/build-coe.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

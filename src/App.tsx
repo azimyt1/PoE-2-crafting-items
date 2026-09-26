@@ -3,7 +3,7 @@ import type { Setup, StrategyResult } from './api';
 import { DEFAULT_PRICES } from './engine/currency';
 import { DEFAULT_ESSENCE_PRICES } from './engine/essences';
 import { buildCtx } from './engine/item';
-import type { BaseDef, Item, ModDef, Prices, TargetReq } from './engine/types';
+import type { BaseDef, EssenceDef, Item, ModDef, Prices, TargetReq } from './engine/types';
 import { familiesOf } from './ui/families';
 import type { DisplayCurrency } from './ui/format';
 import { ItemSetup } from './ui/ItemSetup';
@@ -12,6 +12,7 @@ import { Results } from './ui/Results';
 import { Tracker } from './ui/Tracker';
 import { PricesPanel, type PricesFile } from './ui/PricesPanel';
 import { WeightsPanel } from './ui/WeightsPanel';
+import { Sandbox } from './ui/Sandbox';
 import { HowItWorks } from './ui/HowItWorks';
 import { WorkerClient } from './ui/workerClient';
 import { GameLink, type LinkMode } from './ui/GameLink';
@@ -23,6 +24,20 @@ interface Meta {
   classes: Record<string, string>;
 }
 
+/** Community modifier weights (Craft of Exile), built by scripts/build-weights.mjs */
+interface WeightsFile {
+  source: string;
+  builtAt: string;
+  groups: Record<string, Record<string, number>>;
+  bases: Record<string, string>;
+}
+
+/** Exact essence table (Craft of Exile), built by scripts/build-coe.mjs */
+interface EssencesFile {
+  bases: Record<string, string>;
+  groups: Record<string, EssenceDef[]>;
+}
+
 interface Saved {
   cls: string;
   baseId: string;
@@ -30,6 +45,7 @@ interface Saved {
   baseCost: number;
   reqs: TargetReq[];
   need: number;
+  open?: { p: number; s: number };
   priceOverrides: Prices;
   weights: Record<string, number>;
   currency: DisplayCurrency;
@@ -47,11 +63,19 @@ function loadSaved(): Partial<Saved> {
   }
 }
 
-type Tab = 'goal' | 'results' | 'tracker' | 'prices' | 'weights' | 'help';
+type Tab = 'goal' | 'results' | 'tracker' | 'sandbox' | 'prices' | 'weights' | 'help';
 
 export default function App() {
   const saved = useMemo(loadSaved, []);
-  const [data, setData] = useState<{ bases: BaseDef[]; mods: ModDef[]; meta: Meta; pricesFile: PricesFile | null; ru: RuData | null } | null>(null);
+  const [data, setData] = useState<{
+    bases: BaseDef[];
+    mods: ModDef[];
+    meta: Meta;
+    pricesFile: PricesFile | null;
+    ru: RuData | null;
+    weights: WeightsFile | null;
+    essences: EssencesFile | null;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const client = useRef<WorkerClient | null>(null);
@@ -63,6 +87,7 @@ export default function App() {
   const [baseCost, setBaseCost] = useState(saved.baseCost ?? 1);
   const [reqs, setReqs] = useState<TargetReq[]>(saved.reqs ?? []);
   const [need, setNeed] = useState(saved.need ?? 0);
+  const [open, setOpen] = useState(saved.open ?? { p: 0, s: 0 });
   const [priceOverrides, setPriceOverrides] = useState<Prices>(saved.priceOverrides ?? {});
   const [weights, setWeights] = useState<Record<string, number>>(saved.weights ?? {});
   const [currency, setCurrency] = useState<DisplayCurrency>(saved.currency ?? 'ex');
@@ -99,7 +124,19 @@ export default function App() {
         } catch {
           ru = null;
         }
-        setData({ bases, mods, meta, pricesFile, ru });
+        let weightsFile: WeightsFile | null = null;
+        try {
+          weightsFile = await get('weights.json');
+        } catch {
+          weightsFile = null;
+        }
+        let essencesFile: EssencesFile | null = null;
+        try {
+          essencesFile = await get('essences.json');
+        } catch {
+          essencesFile = null;
+        }
+        setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile, essences: essencesFile });
         setPricesFile(pricesFile);
         const c = new WorkerClient();
         client.current = c;
@@ -114,12 +151,12 @@ export default function App() {
   // ---- persist
   useEffect(() => {
     try {
-      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode };
+      const s: Saved = { cls, baseId, ilvl, baseCost, reqs, need, open, priceOverrides, weights, currency, trials, linkMode };
       localStorage.setItem(STORE_KEY, JSON.stringify(s));
     } catch {
       /* storage unavailable */
     }
-  }, [cls, baseId, ilvl, baseCost, reqs, need, priceOverrides, weights, currency, trials, linkMode]);
+  }, [cls, baseId, ilvl, baseCost, reqs, need, open, priceOverrides, weights, currency, trials, linkMode]);
 
   const parser = useMemo(() => (data ? new ItemParser(data.bases, data.mods, data.ru ?? undefined) : null), [data]);
 
@@ -180,10 +217,22 @@ export default function App() {
     }
   }, [data, cls, base]);
 
+  // Craft of Exile weights for this base; the user's own weights override them.
+  const community = useMemo(() => {
+    const group = base && data?.weights?.bases[base.name];
+    return { group: group || null, weights: (group && data?.weights?.groups[group]) || {} };
+  }, [data, base]);
+  const effWeights = useMemo(() => ({ ...community.weights, ...weights }), [community, weights]);
+
+  const essences = useMemo(() => {
+    const group = base && data?.essences?.bases[base.name];
+    return (group && data?.essences?.groups[group]) || [];
+  }, [data, base]);
+
   const ctx = useMemo(() => {
     if (!data || !base) return null;
-    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: weights });
-  }, [data, base, ilvl, prices, baseCost, weights]);
+    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: effWeights, essences });
+  }, [data, base, ilvl, prices, baseCost, effWeights, essences]);
 
   const families = useMemo(() => (ctx ? familiesOf(ctx) : []), [ctx]);
 
@@ -198,8 +247,12 @@ export default function App() {
 
   const setup: Setup | null = useMemo(() => {
     if (!base || !reqs.length) return null;
-    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights };
-  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, weights]);
+    // free slots beyond the base's capacity are clamped
+    const cap = ctx?.rareCap ?? { p: 3, s: 3 };
+    const o = { p: Math.min(open.p, cap.p), s: Math.min(open.s, cap.s) };
+    const target = { reqs, need: effectiveNeed, ...(o.p + o.s > 0 ? { open: o } : {}) };
+    return { baseId: base.id, ilvl, target, prices, baseCost, weights: effWeights, essences };
+  }, [base, ilvl, reqs, effectiveNeed, open, ctx, prices, baseCost, effWeights, essences]);
 
   const setupKey = setup ? JSON.stringify(setup) : '';
 
@@ -235,6 +288,7 @@ export default function App() {
     ['goal', '1. Предмет и цель'],
     ['results', '2. Варианты крафта'],
     ['tracker', '3. Трекер крафта'],
+    ['sandbox', 'Песочница'],
     ['prices', 'Цены'],
     ['weights', 'Веса модов'],
     ['help', 'Как это работает'],
@@ -295,7 +349,7 @@ export default function App() {
             <div className="muted small">Скопированный предмет сразу выставит базу, уровень предмета и текущие моды для трекера.</div>
           </section>
           {ctx && (
-            <TargetEditor families={families} reqs={reqs} setReqs={setReqs} need={effectiveNeed} setNeed={setNeed} rareCap={ctx.rareCap} />
+            <TargetEditor families={families} reqs={reqs} setReqs={setReqs} need={effectiveNeed} setNeed={setNeed} open={open} setOpen={setOpen} rareCap={ctx.rareCap} />
           )}
           <div className="card actions">
             <label className="inline">
@@ -366,7 +420,15 @@ export default function App() {
         />
       )}
 
-      {tab === 'weights' && ctx && <WeightsPanel families={families} weights={weights} setWeights={setWeights} />}
+      {tab === 'sandbox' && ctx && <Sandbox ctx={ctx} families={families} currency={currency} prices={prices} />}
+      {tab === 'weights' && ctx && <WeightsPanel
+          families={families}
+          weights={weights}
+          setWeights={setWeights}
+          community={community.weights}
+          group={community.group}
+          builtAt={data?.weights?.builtAt}
+        />}
 
       {tab === 'help' && <HowItWorks />}
 

@@ -38,9 +38,15 @@ function inferKind(a: Item, b: Item): string | null {
   if (a.rarity === 'normal' && b.rarity === 'rare') return 'alchemy';
   if (a.rarity === 'magic' && b.rarity === 'rare') return added === 1 && removed === 0 ? 'regal|essence' : null;
   if (a.rarity === b.rarity) {
+    const frBefore = new Set(a.mods.filter((m) => m.fr).map((m) => m.id));
+    if (added === 0 && removed === 0 && b.mods.some((m) => m.fr && !frBefore.has(m.id))) return 'fracture';
     if (added >= 1 && removed === 0) return b.mods.some((m) => m.de && !before.has(m.id)) ? 'desecrate' : a.rarity === 'magic' ? 'augment' : 'exalt';
     if (added === 0 && removed >= 1) return 'annul';
-    if (added === 1 && removed === 1) return 'chaos';
+    const res = (id: string) => /^(Fire|Cold|Lightning|Chaos)Resist\d+$/.test(id);
+    const newIds = b.mods.filter((m) => !before.has(m.id)).map((m) => m.id);
+    if (added >= 1 && added === removed && newIds.every(res) && a.mods.filter((m) => !after.has(m.id)).every((m) => res(m.id)))
+      return added === 1 ? 'chaos|essence|flux' : 'flux';
+    if (added === 1 && removed === 1) return a.rarity === 'rare' ? 'chaos|essence' : 'chaos';
   }
   return null;
 }
@@ -55,6 +61,10 @@ const KIND_RU: Record<string, string> = {
   desecrate: 'очернение',
   annul: 'отмена',
   chaos: 'хаос',
+  'chaos|essence': 'хаос или совершенная эссенция',
+  fracture: 'сфера раскола',
+  flux: 'флюс',
+  'chaos|essence|flux': 'хаос, совершенная эссенция или флюс',
 };
 
 function sameItem(a: Item, b: Item): boolean {

@@ -1,6 +1,6 @@
 // Item model: context construction, affix capacity, modifier pools, analysis.
 
-import type { BaseDef, Ctx, Item, ItemMod, ModDef, PoolEntry, Prices, Side, Target } from './types';
+import type { BaseDef, Ctx, EssenceDef, Item, ItemMod, ModDef, PoolEntry, Prices, Side, Target } from './types';
 
 export const DEFAULT_WEIGHT = 1000;
 
@@ -11,7 +11,8 @@ export function spawnWeight(mod: ModDef, tags: Set<string>): number {
 
 /** "+1 Prefix Modifier allowed / -1 Suffix Modifier allowed" (Dusk Ring etc.) */
 export function rareCapacity(base: BaseDef): { p: number; s: number } {
-  const cap = { p: 3, s: 3 };
+  // rare jewels hold 2 prefixes and 2 suffixes
+  const cap = base.tags.includes('jewel') ? { p: 2, s: 2 } : { p: 3, s: 3 };
   for (const line of base.imp) {
     for (const part of line.split('\n')) {
       const m = part.match(/([+-]\d+) (Prefix|Suffix) Modifiers? allowed/i);
@@ -34,6 +35,7 @@ export function buildCtx(opts: {
   prices: Prices;
   baseCost: number;
   weightOverrides?: Record<string, number>;
+  essences?: EssenceDef[];
 }): Ctx {
   const { base, ilvl, mods, prices, baseCost } = opts;
   const tags = new Set(base.tags);
@@ -56,7 +58,20 @@ export function buildCtx(opts: {
     if (w <= 0) continue;
     (m.d ? lords : regular).push({ mod: m, w });
   }
-  return { base, ilvl, regular, lords, byId, rareCap: rareCapacity(base), prices, baseCost, famGroups };
+  // Essence results: their families are targets too, so they need groups for blocker detection.
+  const essences = opts.essences ?? [];
+  const inPool = new Set([...regular, ...lords].map((e) => e.mod.id));
+  const essenceMods: ModDef[] = [];
+  for (const e of essences)
+    for (const id of e.m) {
+      const m = byId.get(id);
+      if (!m) continue;
+      let g = famGroups.get(m.f);
+      if (!g) famGroups.set(m.f, (g = new Set()));
+      for (const x of m.g) g.add(x);
+      if (!inPool.has(id) && !essenceMods.includes(m)) essenceMods.push(m);
+    }
+  return { base, ilvl, regular, lords, byId, rareCap: rareCapacity(base), prices, baseCost, famGroups, essences, essenceMods };
 }
 
 export function capacity(item: Item, ctx: Ctx): { p: number; s: number } {
@@ -166,7 +181,16 @@ export function analyze(item: Item, ctx: Ctx, target: Target): Analysis {
   }
   // A blocker is only relevant if its req is still missing.
   for (let k = 0; k < modBlocks.length; k++) if (modBlocks[k] >= 0 && met.has(modBlocks[k])) modBlocks[k] = -1;
-  return { met, goal: met.size >= target.need, modReq, modBlocks };
+  return { met, goal: met.size >= target.need && hasOpenSlots(item, ctx, target), modReq, modBlocks };
+}
+
+/** The item keeps the free slots the target asks for (only a rare item can). */
+export function hasOpenSlots(item: Item, ctx: Ctx, target: Target): boolean {
+  const need = target.open;
+  if (!need || (need.p <= 0 && need.s <= 0)) return true;
+  if (item.rarity !== 'rare') return false;
+  const open = openSlots(item, ctx);
+  return open.p >= need.p && open.s >= need.s;
 }
 
 export function itemSignature(item: Item): string {

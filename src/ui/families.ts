@@ -9,6 +9,8 @@ export interface Family {
   /** tiers sorted best (highest level) first */
   tiers: ModDef[];
   desecrated: boolean;
+  /** only essences / alloys add it */
+  essence: boolean;
 }
 
 export function genericText(text: string): string {
@@ -20,11 +22,12 @@ export function genericText(text: string): string {
 
 export function familiesOf(ctx: Ctx): Family[] {
   const map = new Map<string, Family>();
-  for (const e of [...ctx.regular, ...ctx.lords]) {
-    const m = e.mod;
+  const pool = [...ctx.regular, ...ctx.lords].map((e) => e.mod);
+  for (const m of [...pool, ...ctx.essenceMods]) {
     let f = map.get(m.f);
-    if (!f) map.set(m.f, (f = { fam: m.f, side: m.s, name: '', tiers: [], desecrated: !!m.d }));
-    f.tiers.push(m);
+    if (!f) map.set(m.f, (f = { fam: m.f, side: m.s, name: '', tiers: [], desecrated: !!m.d, essence: true }));
+    if (pool.includes(m)) f.essence = false;
+    if (!f.tiers.includes(m)) f.tiers.push(m);
   }
   for (const f of map.values()) {
     f.tiers.sort((a, b) => b.l - a.l);

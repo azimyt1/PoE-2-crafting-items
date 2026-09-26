@@ -24,6 +24,8 @@ export interface ModDef {
   tg: string[];
   /** 1 = desecrated-only modifier (Abyss lords) */
   d: 0 | 1;
+  /** 1 = only added by essences / alloys, never rolls */
+  e?: 1;
   /** stat ranges */
   st: [number, number][];
 }
@@ -68,6 +70,8 @@ export interface Target {
   reqs: TargetReq[];
   /** how many of reqs must be on the item (default: all) */
   need: number;
+  /** free prefix / suffix slots the finished rare item must keep (for later crafting) */
+  open?: { p: number; s: number };
 }
 
 /** Prices in Exalted Orbs, keyed by in-game English item name. */
@@ -88,6 +92,10 @@ export interface Ctx {
   baseCost: number;
   /** groups of every family, used to detect blockers */
   famGroups: Map<string, Set<string>>;
+  /** essences and alloys usable on this base (exact table from Craft of Exile) */
+  essences: EssenceDef[];
+  /** modifiers that only essences / alloys add on this base (can be targets) */
+  essenceMods: ModDef[];
 }
 
 export type OmenName =
@@ -105,7 +113,9 @@ export type OmenName =
   | 'Omen of Light'
   | 'Omen of Sinistral Necromancy'
   | 'Omen of Dextral Necromancy'
-  | 'Omen of Crystallisation';
+  | 'Omen of Greater Exaltation'
+  | 'Omen of Sinistral Crystallisation'
+  | 'Omen of Dextral Crystallisation';
 
 export type ActionKind =
   | 'transmute'
@@ -117,19 +127,40 @@ export type ActionKind =
   | 'annul'
   | 'essence'
   | 'desecrate'
+  | 'fracture'
+  | 'flux'
   | 'restart';
 
 /** 0 = normal orb, 1 = Greater, 2 = Perfect */
 export type OrbTier = 0 | 1 | 2;
 
+/** One essence or alloy on a base group, as in public/data/essences.json */
+export interface EssenceDef {
+  /** full item name, e.g. "Greater Essence of the Body" */
+  n: string;
+  /** 1 = used on rare items: removes a random modifier first (Perfect, corrupted essences, alloys) */
+  r: 0 | 1;
+  /** 1 = Omens of Crystallisation apply */
+  c: 0 | 1;
+  /** modifier ids; the essence adds one of them */
+  m: string[];
+}
+
 export interface EssenceUse {
   /** full item name, e.g. "Greater Essence of the Body" */
   name: string;
-  /** modifier id guaranteed on this base */
-  modId: string;
+  /** modifiers it can add on this base (one of them, at random) */
+  modIds: string[];
+  /** used on a rare item, removes a random modifier first */
+  rare?: boolean;
+  /** abstract model only: index of the essence in its own table */
+  ref?: number;
 }
 
 export type BoneTier = 'Gnawed' | 'Preserved' | 'Ancient';
+
+/** Fluxes turn resistance modifiers into another resistance */
+export type FluxKind = 'Blazing' | 'Chilling' | 'Crackling' | 'Void';
 
 export interface Action {
   kind: ActionKind;
@@ -137,6 +168,7 @@ export interface Action {
   omens?: OmenName[];
   essence?: EssenceUse;
   bone?: BoneTier;
+  flux?: FluxKind;
 }
 
 export interface Strategy {
@@ -153,6 +185,10 @@ export interface Strategy {
     annul: boolean;
     essence: boolean;
     desecrate: boolean;
+    /** Fracturing Orb: lock a random modifier on a rare item with 4+ modifiers */
+    fracture: boolean;
+    /** Blazing / Chilling / Crackling / Void Flux: convert resistance modifiers */
+    flux?: boolean;
     omens: boolean;
     /** allow Greater / Perfect orbs */
     higherTiers: boolean;

@@ -1,6 +1,6 @@
 // Messages between the UI and the calculation worker.
 
-import type { Action, BaseDef, Item, ModDef, Prices, Target } from './engine/types';
+import type { Action, BaseDef, EssenceDef, Item, ModDef, Prices, Target } from './engine/types';
 
 export interface Setup {
   baseId: string;
@@ -9,6 +9,8 @@ export interface Setup {
   prices: Prices;
   baseCost: number;
   weights: Record<string, number>;
+  /** essences and alloys usable on this base */
+  essences: EssenceDef[];
 }
 
 export interface StrategyResult {

@@ -1,7 +1,8 @@
 // Currency names, rules and placeholder prices.
 // Rules follow Path of Exile 2 patch 0.5.x (game data 4.5.5.2).
 
-import type { Action, BaseDef, BoneTier, OmenName, OrbTier, Prices } from './types';
+import { essenceRu } from './essences';
+import type { Action, BaseDef, BoneTier, FluxKind, OmenName, OrbTier, Prices } from './types';
 
 export const ORB_NAMES: Record<'transmute' | 'augment' | 'regal' | 'exalt' | 'chaos', [string, string, string]> = {
   transmute: ['Orb of Transmutation', 'Greater Orb of Transmutation', 'Perfect Orb of Transmutation'],
@@ -32,6 +33,11 @@ export const BONE_LEVELS: Record<BoneTier, { min: number; max: number }> = {
   Ancient: { min: 40, max: 999 },
 };
 
+/** Bones desecrate jewellery, weapons / quivers and armour only. */
+export function canDesecrate(base: BaseDef): boolean {
+  return !base.tags.includes('jewel');
+}
+
 export function boneKind(base: BaseDef): 'Jawbone' | 'Rib' | 'Collarbone' {
   const t = new Set(base.tags);
   if (t.has('ring') || t.has('amulet') || t.has('belt')) return 'Collarbone';
@@ -61,6 +67,12 @@ export function actionItems(action: Action, base: BaseDef): string[] {
       break;
     case 'annul':
       items.push(ANNUL);
+      break;
+    case 'fracture':
+      items.push(FRACTURE);
+      break;
+    case 'flux':
+      items.push(`${action.flux ?? 'Void'} Flux`);
       break;
     case 'essence':
       if (action.essence) items.push(action.essence.name);
@@ -102,7 +114,9 @@ const OMEN_RU: Record<OmenName, string> = {
   'Omen of Light': 'Омен света (аннулирование убирает только очернённый мод)',
   'Omen of Sinistral Necromancy': 'Омен левой некромантии (кость: только префикс)',
   'Omen of Dextral Necromancy': 'Омен правой некромантии (кость: только суффикс)',
-  'Omen of Crystallisation': 'Омен кристаллизации',
+  'Omen of Greater Exaltation': 'Омен большего возвышения (экзальт добавляет 2 мода)',
+  'Omen of Sinistral Crystallisation': 'Омен левой кристаллизации (совершенная эссенция убирает только префикс)',
+  'Omen of Dextral Crystallisation': 'Омен правой кристаллизации (совершенная эссенция убирает только суффикс)',
 };
 
 export function omenRu(o: OmenName): string {
@@ -117,13 +131,23 @@ const ORB_RU: Record<string, string> = {
   chaos: 'Сфера хаоса',
   alchemy: 'Сфера алхимии',
   annul: 'Сфера отмены (аннулирование)',
+  fracture: 'Сфера раскола (закрепить случайный мод)',
+  flux: 'Флюс',
   restart: 'Взять новую базу и начать заново',
 };
 const TIER_RU = ['', 'Большая ', 'Совершенная '];
 
+const FLUX_RU: Record<FluxKind, string> = {
+  Blazing: 'Пылающий флюс (сопр. холоду и молнии → сопр. огню)',
+  Chilling: 'Леденящий флюс (сопр. огню и молнии → сопр. холоду)',
+  Crackling: 'Трескучий флюс (сопр. огню и холоду → сопр. молнии)',
+  Void: 'Флюс Пустоты (сопр. стихиям → сопр. хаосу)',
+};
+
 export function actionTitleRu(a: Action, base: BaseDef): string {
   let t: string;
-  if (a.kind === 'essence') t = `Эссенция: ${a.essence?.name ?? '?'}`;
+  if (a.kind === 'essence') t = a.essence ? `${essenceRu(a.essence.name)} (${a.essence.name})` : 'Эссенция';
+  else if (a.kind === 'flux') t = FLUX_RU[a.flux ?? 'Void'];
   else if (a.kind === 'desecrate') t = `Очернение костью: ${boneName(base, a.bone ?? 'Preserved')} (выбрать лучший из 3)`;
   else {
     const tier = a.tier ?? 0;
@@ -173,6 +197,13 @@ export const DEFAULT_PRICES: Prices = {
   'Omen of Light': 20,
   'Omen of Sinistral Necromancy': 5,
   'Omen of Dextral Necromancy': 5,
+  'Omen of Greater Exaltation': 10,
+  'Omen of Sinistral Crystallisation': 10,
+  'Omen of Dextral Crystallisation': 10,
+  'Blazing Flux': 5,
+  'Chilling Flux': 5,
+  'Crackling Flux': 5,
+  'Void Flux': 10,
   'Gnawed Jawbone': 0.3,
   'Preserved Jawbone': 2,
   'Ancient Jawbone': 10,

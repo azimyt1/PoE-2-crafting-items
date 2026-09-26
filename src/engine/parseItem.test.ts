@@ -156,3 +156,25 @@ describe('item parser', () => {
     expect(parser.parse('hello world')).toBeNull();
   });
 });
+
+describe('jewels', () => {
+  it('reads a rare jewel copied from the game', () => {
+    const text = `Item Class: Jewels
+Rarity: Rare
+Grim Glimmer
+Sapphire
+--------
+Item Level: 79
+--------
+{ Prefix Modifier "Blasting" (Tier: 1) — Attack, Caster }
+5(4-6)% increased Area of Effect
+{ Suffix Modifier "of Enchanting" (Tier: 1) — Caster, Speed }
+3(2-4)% increased Cast Speed
+--------
+Place into an allocated Jewel Socket on the Passive Skill Tree. Right click to remove from the Socket.
+`;
+    const p = parser.parse(text)!;
+    expect(p.base?.name).toBe('Sapphire');
+    expect(p.mods.map((m) => m.mod.id).sort()).toEqual(['JewelAreaofEffect', 'JewelCastSpeed']);
+  });
+});

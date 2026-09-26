@@ -1,81 +1,93 @@
-// Essence table. The game client does not export which exact tier each
-// essence grants, so the tier is approximated by a modifier-level cap per
-// essence grade. Values are editable here if better data is found.
+// Essences and alloys. Which modifier each one adds on which base comes from
+// the exact table of Craft of Exile (public/data/essences.json, built by
+// scripts/build-coe.mjs); this file only holds names and default prices.
 
 import type { Ctx, ModDef, Prices } from './types';
 
-export interface EssenceFamily {
-  /** English essence suffix, e.g. "the Body" -> "Essence of the Body" */
-  key: string;
-  ru: string;
-  /** regex on modifier id (without the tier number) */
-  mods: RegExp;
-}
+/** English essence suffix -> Russian description */
+const FAMILY_RU: Record<string, string> = {
+  'the Body': 'Тела (здоровье)',
+  'the Mind': 'Разума (мана)',
+  Enhancement: 'Улучшения (защита)',
+  Abrasion: 'Истирания (физ. урон)',
+  Flames: 'Пламени (урон огнём)',
+  Ice: 'Льда (урон холодом)',
+  Electricity: 'Электричества (урон молнией)',
+  Insulation: 'Изоляции (сопр. огню)',
+  Thawing: 'Оттаивания (сопр. холоду)',
+  Grounding: 'Заземления (сопр. молнии)',
+  Ruin: 'Разрушения (сопр. хаосу)',
+  Haste: 'Спешки (скорость атаки)',
+  Alacrity: 'Проворства (скорость чар)',
+  Seeking: 'Поиска (крит)',
+  Sorcery: 'Колдовства (урон чарами)',
+  Opulence: 'Богатства (редкость)',
+  Battle: 'Битвы (атаки)',
+  Command: 'Командования (приспешники)',
+  'the Infinite': 'Бесконечности (характеристики)',
+};
 
-export const ESSENCE_FAMILIES: EssenceFamily[] = [
-  { key: 'the Body', ru: 'Тела (здоровье)', mods: /^IncreasedLife\d+_*$/ },
-  { key: 'the Mind', ru: 'Разума (мана)', mods: /^IncreasedMana(TwoHandWeapon)?\d+_*$/ },
-  {
-    key: 'Enhancement',
-    ru: 'Улучшения (% защиты)',
-    mods: /^LocalIncreased(PhysicalDamageReductionRatingPercent|EvasionRatingPercent|EnergyShieldPercent|ArmourAndEvasion|ArmourAndEnergyShield|EvasionAndEnergyShield|ArmourAndEvasionAndEnergyShield)\d+_*$/,
-  },
-  { key: 'Abrasion', ru: 'Истирания (физ. урон)', mods: /^LocalAddedPhysicalDamage(TwoHand)?\d+_*$/ },
-  { key: 'Flames', ru: 'Пламени (урон огнём)', mods: /^LocalAddedFireDamage(TwoHand)?\d+_*$/ },
-  { key: 'Ice', ru: 'Льда (урон холодом)', mods: /^LocalAddedColdDamage(TwoHand)?\d+_*$/ },
-  { key: 'Electricity', ru: 'Электричества (урон молнией)', mods: /^LocalAddedLightningDamage(TwoHand)?\d+_*$/ },
-  { key: 'Insulation', ru: 'Изоляции (сопр. огню)', mods: /^FireResist\d+_*$/ },
-  { key: 'Thawing', ru: 'Оттаивания (сопр. холоду)', mods: /^ColdResist\d+_*$/ },
-  { key: 'Grounding', ru: 'Заземления (сопр. молнии)', mods: /^LightningResist\d+_*$/ },
-  { key: 'Ruin', ru: 'Разрушения (сопр. хаосу)', mods: /^ChaosResist\d+_*$/ },
-  { key: 'Haste', ru: 'Спешки (скорость атаки)', mods: /^(Local)?IncreasedAttackSpeed\d+_*$/ },
-  { key: 'Alacrity', ru: 'Проворства (скорость чар)', mods: /^(IncreasedCastSpeed(TwoHand)?|CastSpeedJewellery)\d+_*$/ },
-  { key: 'Seeking', ru: 'Поиска (шанс крита)', mods: /^(LocalCriticalStrikeChance|CriticalStrikeChance|SpellCriticalStrikeChance(TwoHand)?)\d+_*$/ },
-  { key: 'Sorcery', ru: 'Колдовства (урон чарами)', mods: /^(SpellDamageOnWeapon|SpellDamageOnTwoHandWeapon|SpellDamage)\d+_*$/ },
-  { key: 'Opulence', ru: 'Богатства (редкость)', mods: /^ItemFoundRarityIncrease\d+_*$/ },
+const CORRUPTED = ['Delirium', 'Horror', 'Hysteria', 'Insanity'];
+const CORRUPTED_RU: Record<string, string> = { Delirium: 'Бреда', Horror: 'Ужаса', Hysteria: 'Истерии', Insanity: 'Безумия' };
+
+const ALLOYS = [
+  'Adaptive Alloy',
+  'Celestial Alloy',
+  'Cyclonic Alloy',
+  'Expansive Alloy',
+  'Mystic Alloy',
+  'Prismatic Alloy',
+  'Protective Alloy',
+  'Runic Alloy',
+  'Sovereign Alloy',
+  'Swift Alloy',
+  'Transcendent Alloy',
+  "The Runebinder's Alloy",
+  "The Runefather's Alloy",
 ];
 
-export const ESSENCE_GRADES = [
-  { prefix: 'Lesser ', ru: 'Малая', maxLevel: 16 },
-  { prefix: '', ru: 'Обычная', maxLevel: 33 },
-  { prefix: 'Greater ', ru: 'Большая', maxLevel: 54 },
+const GRADES = [
+  { prefix: 'Lesser ', ru: 'Малая', price: 0.1 },
+  { prefix: '', ru: 'Обычная', price: 0.4 },
+  { prefix: 'Greater ', ru: 'Большая', price: 3 },
+  { prefix: 'Perfect ', ru: 'Совершенная', price: 25 },
 ] as const;
 
-export function essenceName(fam: EssenceFamily, grade: (typeof ESSENCE_GRADES)[number]): string {
-  return `${grade.prefix}Essence of ${fam.key}`;
+/** Russian display name of an essence or alloy. */
+export function essenceRu(name: string): string {
+  if (name.endsWith('Alloy')) return `Сплав: ${name}`;
+  const m = name.match(/^(Lesser |Greater |Perfect )?Essence of (.+)$/);
+  if (!m) return name;
+  if (CORRUPTED.includes(m[2])) return `Эссенция ${CORRUPTED_RU[m[2]]}`;
+  const grade = GRADES.find((g) => g.prefix === (m[1] ?? '')) ?? GRADES[1];
+  return `${grade.ru} эссенция ${FAMILY_RU[m[2]] ?? m[2]}`;
 }
 
-export const DEFAULT_ESSENCE_PRICES: Prices = Object.fromEntries(
-  ESSENCE_FAMILIES.flatMap((f) => [
-    [essenceName(f, ESSENCE_GRADES[0]), 0.1],
-    [essenceName(f, ESSENCE_GRADES[1]), 0.4],
-    [essenceName(f, ESSENCE_GRADES[2]), 3],
-  ]),
-);
+/** Placeholder prices in Exalted Orbs (real ones come from poe.ninja). */
+export const DEFAULT_ESSENCE_PRICES: Prices = Object.fromEntries([
+  ...Object.keys(FAMILY_RU).flatMap((f) => GRADES.map((g) => [`${g.prefix}Essence of ${f}`, g.price])),
+  ...CORRUPTED.map((c) => [`Essence of ${c}`, 20]),
+  ...ALLOYS.map((a) => [a, 10]),
+]);
 
 export interface EssenceOption {
   name: string;
   ru: string;
-  mod: ModDef;
+  /** modifiers it can add (one of them, at random) */
+  mods: ModDef[];
+  /** used on rare items: removes a random modifier first */
+  rare: boolean;
+  /** Omens of Crystallisation apply */
+  crystal: boolean;
 }
 
-/** All essences usable on this base, with the modifier each one guarantees. */
+/** All essences and alloys usable on this base, with the modifiers they add. */
 export function essencesForBase(ctx: Ctx): EssenceOption[] {
   const out: EssenceOption[] = [];
-  for (const fam of ESSENCE_FAMILIES) {
-    const tiers = ctx.regular
-      .map((e) => e.mod)
-      .filter((m) => fam.mods.test(m.id))
-      .sort((a, b) => a.l - b.l);
-    if (!tiers.length) continue;
-    // One family per essence: if several match (e.g. local and global), keep the first family found.
-    const f0 = tiers[0].f;
-    const famTiers = tiers.filter((m) => m.f === f0);
-    for (const grade of ESSENCE_GRADES) {
-      const eligible = famTiers.filter((m) => m.l <= grade.maxLevel);
-      const mod = eligible[eligible.length - 1] ?? famTiers[0];
-      out.push({ name: essenceName(fam, grade), ru: `${grade.ru} эссенция ${fam.ru}`, mod });
-    }
+  for (const e of ctx.essences) {
+    const mods = e.m.map((id) => ctx.byId.get(id)).filter((m): m is ModDef => !!m);
+    if (!mods.length) continue;
+    out.push({ name: e.n, ru: essenceRu(e.n), mods, rare: !!e.r, crystal: !!e.c });
   }
   return out;
 }

@@ -46,6 +46,7 @@ const CLASSES = {
   Bow: 'Лук',
   Crossbow: 'Арбалет',
   Talisman: 'Талисман',
+  Jewel: 'Самоцвет',
 };
 
 async function load(name, localDir) {
@@ -130,7 +131,8 @@ async function main() {
   const bases = [];
   for (const [id, b] of Object.entries(baseItems)) {
     if (!(b.item_class in CLASSES)) continue;
-    if (b.release_state !== 'released' || b.domain !== 'item') continue;
+    // jewels live in the "misc" domain
+    if (b.release_state !== 'released' || (b.domain !== 'item' && !(b.item_class === 'Jewel' && b.domain === 'misc'))) continue;
     const tags = b.tags || [];
     if (tags.includes('not_for_sale') || tags.includes('demigods')) continue;
     if (!b.name || b.name.startsWith('[')) continue;
@@ -160,12 +162,17 @@ async function main() {
   // ---- mods ----
   const outMods = [];
   for (const [id, m] of Object.entries(mods)) {
-    if (m.domain !== 'item' && m.domain !== 'desecrated') continue;
+    if (m.domain !== 'item' && m.domain !== 'desecrated' && m.domain !== 'misc') continue;
     if (m.generation_type !== 'prefix' && m.generation_type !== 'suffix') continue;
     const w = compactWeights(m.spawn_weights || []);
-    if (!w.some(([, x]) => x > 0)) continue;
-    // Must be able to spawn on at least one supported base.
-    if (!baseTagSets.some((tags) => weightFor(w, tags) > 0)) continue;
+    // Essence and alloy modifiers never roll naturally (weight 0) but can be
+    // added by essences and alloys (see scripts/build-coe.mjs).
+    const essenceOnly = m.domain === 'item' && /^(Essence|Alloy)/.test(id) && !w.some(([, x]) => x > 0);
+    if (!essenceOnly) {
+      if (!w.some(([, x]) => x > 0)) continue;
+      // Must be able to spawn on at least one supported base.
+      if (!baseTagSets.some((tags) => weightFor(w, tags) > 0)) continue;
+    }
     const stats = (m.stats || []).map((s) => s.id);
     const side = m.generation_type === 'prefix' ? 'p' : 's';
     outMods.push({
@@ -179,6 +186,7 @@ async function main() {
       w,
       tg: m.implicit_tags || [],
       d: m.domain === 'desecrated' ? 1 : 0,
+      ...(essenceOnly ? { e: 1 } : {}),
       st: (m.stats || []).map((s) => [s.min, s.max]),
     });
   }
