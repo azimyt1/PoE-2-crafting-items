@@ -1,6 +1,7 @@
 // Parses an item copied from the game with Ctrl+C or Ctrl+Alt+C
 // (advanced mod descriptions). English and Russian clients are supported.
 
+import { rareCapacity, spawnWeight } from './item';
 import type { BaseDef, ItemMod, ModDef, Rarity, Side } from './types';
 
 export interface RuData {
@@ -172,6 +173,147 @@ export class ItemParser {
     return best;
   }
 
+  /**
+   * Simple copy and the trade site show one line per stat: the same stat from
+   * two modifiers is summed ("+116 to maximum Energy Shield" = a flat Energy
+   * Shield modifier + the flat part of a hybrid). Find the smallest set of
+   * modifiers, one tier each, whose summed ranges contain every value shown.
+   * Returns null when the search is not applicable (the caller falls back).
+   */
+  private solveSimple(
+    lines: { text: string; fr: boolean; de: boolean }[],
+    base: BaseDef | null,
+    pool?: Set<string>,
+  ): { mods: ParsedMod[]; unmatched: string[] } | null {
+    const n = lines.length;
+    if (!n || n > 12) return null;
+    const tags = base ? new Set(base.tags) : null;
+    const allowed = (m: ModDef) => !tags || m.e === 1 || spawnWeight(m, tags) > 0;
+    const info = lines.map((l) => ({ t: this.tpl(l.text), v: numbers(l.text).values }));
+
+    interface Tier {
+      m: ModDef;
+      /** per covered line: value ranges */
+      r: [number, number][][];
+    }
+    interface Opt {
+      lines: number[];
+      tiers: Tier[];
+      groups: string[];
+      side: Side;
+    }
+    const opts = new Map<string, Opt>();
+    const addOpts = (idx: number[]) => {
+      for (const m of this.candidates(idx.map((i) => lines[i].text))) {
+        if (!allowed(m)) continue;
+        const mlines = m.x.split('\n');
+        const r: [number, number][][] = [];
+        let ok = true;
+        for (const i of idx) {
+          const ml = mlines.find((x) => template(x) === info[i].t);
+          const rr = ml ? modRanges(ml) : [];
+          if (!ml || rr.length !== info[i].v.length) {
+            ok = false;
+            break;
+          }
+          r.push(rr);
+        }
+        if (!ok) continue;
+        const key = m.f + '|' + idx.join(',');
+        let o = opts.get(key);
+        if (!o) opts.set(key, (o = { lines: idx, tiers: [], groups: m.g, side: m.s }));
+        o.tiers.push({ m, r });
+      }
+    };
+    for (let i = 0; i < n; i++) addOpts([i]);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) addOpts([i, j]);
+    const list = [...opts.values()];
+    for (const o of list) o.tiers.sort((a, b) => b.m.l - a.m.l);
+    const coverable = new Set(list.flatMap((o) => o.lines));
+    if (!coverable.size) return null;
+    const cap = base ? rareCapacity(base) : { p: 3, s: 3 };
+
+    // tier choice for a set of options: summed ranges must contain the shown values
+    const lo = (t: Tier, k: number, vi: number) => Math.min(t.r[k][vi][0], t.r[k][vi][1]);
+    const hi = (t: Tier, k: number, vi: number) => Math.max(t.r[k][vi][0], t.r[k][vi][1]);
+    const assign = (chosen: Opt[]): number[] | null => {
+      const pick: number[] = [];
+      const bound = (o: Opt, ti: number | null, line: number, vi: number, f: typeof lo) => {
+        const k = o.lines.indexOf(line);
+        if (ti !== null) return f(o.tiers[ti], k, vi);
+        const vals = o.tiers.map((t) => f(t, k, vi));
+        return f === lo ? Math.min(...vals) : Math.max(...vals);
+      };
+      const fits = (upto: number): boolean => {
+        for (const line of coverable) {
+          const contrib = chosen.map((o, c) => ({ o, c })).filter(({ o }) => o.lines.includes(line));
+          for (let vi = 0; vi < info[line].v.length; vi++) {
+            let a = 0;
+            let b = 0;
+            for (const { o, c } of contrib) {
+              const ti = c < upto ? pick[c] : null;
+              a += bound(o, ti, line, vi, lo);
+              b += bound(o, ti, line, vi, hi);
+            }
+            const v = info[line].v[vi];
+            if (v < a - 1e-6 || v > b + 1e-6) return false;
+          }
+        }
+        return true;
+      };
+      const rec = (c: number): boolean => {
+        if (c === chosen.length) return fits(c);
+        for (let ti = 0; ti < chosen[c].tiers.length; ti++) {
+          pick[c] = ti;
+          if (fits(c + 1) && rec(c + 1)) return true;
+        }
+        return false;
+      };
+      return rec(0) ? pick.slice() : null;
+    };
+
+    let best: { chosen: Opt[]; pick: number[]; score: number } | null = null;
+    let budget = 20000;
+    const chosen: Opt[] = [];
+    const dfs = (maxSize: number) => {
+      if (budget-- <= 0) return;
+      const covered = new Set(chosen.flatMap((o) => o.lines));
+      const first = [...coverable].find((l) => !covered.has(l));
+      if (first === undefined) {
+        const pick = assign(chosen);
+        if (!pick) return;
+        const score = chosen.reduce((s, o, c) => s + (pool?.has(o.tiers[pick[c]].m.id) ? 1 : 0), 0);
+        if (!best || score > best.score) best = { chosen: [...chosen], pick, score };
+        return;
+      }
+      if (chosen.length >= maxSize) return;
+      const groups = new Set(chosen.flatMap((o) => o.groups));
+      const sides = { p: 0, s: 0 };
+      for (const o of chosen) sides[o.side]++;
+      for (const o of list) {
+        if (!o.lines.includes(first) || chosen.includes(o)) continue;
+        if (o.groups.some((g) => groups.has(g)) || sides[o.side] >= cap[o.side]) continue;
+        chosen.push(o);
+        dfs(maxSize);
+        chosen.pop();
+      }
+    };
+    for (let size = 1; size <= coverable.size + 2 && !best && budget > 0; size++) dfs(size);
+    if (!best) return null;
+    const found = best as { chosen: Opt[]; pick: number[] };
+    const mods: ParsedMod[] = found.chosen.map((o, c) => {
+      const def = o.tiers[found.pick[c]].m;
+      const ls = o.lines.map((i) => lines[i]);
+      return {
+        def,
+        lines: ls.map((l) => l.text),
+        mod: { id: def.id, ...(ls.some((l) => l.fr) ? { fr: true } : {}), ...(ls.some((l) => l.de) ? { de: true } : {}) },
+      };
+    });
+    const unmatched = lines.filter((_, i) => !coverable.has(i)).map((l) => l.text);
+    return { mods, unmatched };
+  }
+
   private candidates(lines: string[]): ModDef[] {
     return this.byTemplate.get(lines.map((l) => this.tpl(l)).sort().join('\n')) ?? [];
   }
@@ -340,6 +482,12 @@ export class ItemParser {
       const fb = this.findBase(nameLines, implicitText, ru);
       out.base = fb.base;
       out.baseName = fb.name;
+      const solved = this.solveSimple(candidatesLines, out.base, poolIds);
+      if (solved) {
+        out.mods.push(...solved.mods);
+        out.unmatched.push(...solved.unmatched);
+        return out;
+      }
       for (let i = 0; i < candidatesLines.length; ) {
         let done = false;
         for (const k of [2, 1]) {

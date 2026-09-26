@@ -220,3 +220,42 @@ Requires: Level 60
     expect(p.mods.find((m) => m.mod.id.startsWith('ColdResist'))!.mod.fr).toBe(true);
   });
 });
+
+describe('summed stat lines', () => {
+  it('splits a line that two modifiers add up to (real trade listing)', () => {
+    const text = `Rarity: Rare
+Honour Suit
+Sacramental Robe
+--------
+Sockets: S S
+--------
+Body Armour
+Energy Shield: 358 (augmented)
+--------
+Item Level: 82
+Requires: Level 75, 121 Int
+--------
++12 to Dexterity (rune)
+Regenerate 0.45% of maximum Life per second (rune)
+Bonded: +40 to maximum Life (rune)
+Bonded: +40 to maximum Mana (rune)
+--------
+25% increased Energy Shield Recharge Rate (implicit)
+--------
++116 to maximum Energy Shield (explicit)
+33% increased Energy Shield (explicit)
++193 to maximum Life (explicit)
++28% to Fire Resistance (explicit)
++25% to Chaos Resistance (explicit)
+--------
+Note: ~b/o 1 chaos
+--------`;
+    const p = parser.parse(text)!;
+    expect(p.base?.name).toBe('Sacramental Robe');
+    expect(p.ilvl).toBe(82);
+    const ids = p.mods.map((m) => m.mod.id).sort();
+    // +116 flat ES = flat ES tier (91-96) + flat part of the hybrid (21-25)
+    expect(ids).toEqual(['ChaosResist6', 'FireResist5', 'IncreasedLife12', 'LocalIncreasedEnergyShield11', 'LocalIncreasedEnergyShieldAndBase5']);
+    expect(p.unmatched).toEqual([]);
+  });
+});
