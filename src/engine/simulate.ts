@@ -126,7 +126,7 @@ export function explainPlan(planner: Planner, start: Item, maxSteps = 14): PlanS
     const cost = actionCost(a, ctx.base, ctx.prices, ctx.baseCost);
     const hNow = planner.H(item);
     if (a.kind === 'restart') {
-      steps.push({ title: actionTitleRu(a, ctx.base), action: a, cost, pGood: 1, remaining: planner.h0, itemAfter: { rarity: 'normal', mods: [] } });
+      steps.push({ title: actionTitleRu(a, ctx.base), action: a, cost, pGood: 1, remaining: planner.h0, itemAfter: ctx.restartItem ?? { rarity: 'normal', mods: [] } });
       break;
     }
     const outs = planner.outcomesOf(item, a).map((o) => ({ ...o, h: planner.H(o.item) }));

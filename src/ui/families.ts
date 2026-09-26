@@ -1,11 +1,15 @@
 // Groups the modifier pool of a base into families (tiers of one modifier).
 
+import { ruTemplate, ruText } from '../engine/ruText';
 import type { Ctx, ModDef, Side } from '../engine/types';
 
 export interface Family {
   fam: string;
   side: Side;
+  /** display name (Russian when a translation exists) */
   name: string;
+  /** English name, as in the English game client */
+  nameEn: string;
   /** tiers sorted best (highest level) first */
   tiers: ModDef[];
   desecrated: boolean;
@@ -25,18 +29,34 @@ export function familiesOf(ctx: Ctx): Family[] {
   const pool = [...ctx.regular, ...ctx.lords].map((e) => e.mod);
   for (const m of [...pool, ...ctx.essenceMods]) {
     let f = map.get(m.f);
-    if (!f) map.set(m.f, (f = { fam: m.f, side: m.s, name: '', tiers: [], desecrated: !!m.d, essence: true }));
+    if (!f) map.set(m.f, (f = { fam: m.f, side: m.s, name: '', nameEn: '', tiers: [], desecrated: !!m.d, essence: true }));
     if (pool.includes(m)) f.essence = false;
     if (!f.tiers.includes(m)) f.tiers.push(m);
   }
   for (const f of map.values()) {
     f.tiers.sort((a, b) => b.l - a.l);
-    f.name = genericText(f.tiers[0].x);
+    f.nameEn = genericText(f.tiers[0].x) || `(no text: ${f.tiers[0].id})`;
+    f.name = f.tiers[0].x
+      .split('\n')
+      .map((l) => ruTemplate(l) ?? genericText(l))
+      .join(' / ') || `(мод без текста: ${f.tiers[0].id})`;
   }
   return [...map.values()].sort((a, b) => a.side.localeCompare(b.side) || Number(a.desecrated) - Number(b.desecrated) || a.name.localeCompare(b.name));
 }
 
 export function tierLabel(f: Family, m: ModDef): string {
   const n = f.tiers.indexOf(m) + 1;
+  return `T${n} · ур.${m.l} · ${ruText(m.x)}`;
+}
+
+/** The same label with the English text (for tooltips). */
+export function tierLabelEn(f: Family, m: ModDef): string {
+  const n = f.tiers.indexOf(m) + 1;
   return `T${n} · ур.${m.l} · ${m.x.replace(/\n/g, ' / ')}`;
+}
+
+/** Search by Russian or English name. */
+export function famMatches(f: Family, q: string): boolean {
+  const s = q.trim().toLowerCase();
+  return !s || f.name.toLowerCase().includes(s) || f.nameEn.toLowerCase().includes(s);
 }

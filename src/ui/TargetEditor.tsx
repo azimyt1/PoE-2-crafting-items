@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TargetReq } from '../engine/types';
-import { tierLabel, type Family } from './families';
+import { famMatches, tierLabel, tierLabelEn, type Family } from './families';
+import { ruText } from '../engine/ruText';
 
 interface Props {
   families: Family[];
@@ -11,26 +12,54 @@ interface Props {
   open: { p: number; s: number };
   setOpen: (o: { p: number; s: number }) => void;
   rareCap: { p: number; s: number };
+  /** slots already held by kept modifiers of the current item */
+  taken?: { p: number; s: number };
+  /** how many of each extra group (1, 2, 3) are needed */
+  groupNeed: Record<string, number>;
+  setGroupNeed: (g: Record<string, number>) => void;
 }
+
+const GROUPS = [
+  { id: 0, ru: 'обязательный' },
+  { id: 1, ru: 'группа А' },
+  { id: 2, ru: 'группа Б' },
+  { id: 3, ru: 'группа В' },
+];
 
 export function reqLabel(f: Family, minLevel: number): string {
   const ok = f.tiers.filter((t) => t.l >= minLevel);
   const worst = ok[ok.length - 1];
-  return `${f.name} — от T${ok.length} (${worst ? worst.x.replace(/\n/g, ' / ') : '?'})`;
+  return `${f.name} — от T${ok.length} (${worst ? ruText(worst.x) : '?'})`;
 }
 
-export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, setOpen, rareCap }: Props) {
+export function TargetEditor({
+  families,
+  reqs,
+  setReqs,
+  need,
+  setNeed,
+  open,
+  setOpen,
+  rareCap,
+  taken = { p: 0, s: 0 },
+  groupNeed,
+  setGroupNeed,
+}: Props) {
   const [q, setQ] = useState('');
   const byFam = new Map(families.map((f) => [f.fam, f]));
   const chosen = new Set(reqs.map((r) => r.fam));
-  const filter = (f: Family) => !chosen.has(f.fam) && (!q || f.name.toLowerCase().includes(q.toLowerCase()));
+  const filter = (f: Family) => !chosen.has(f.fam) && famMatches(f, q);
   const prefixes = families.filter((f) => f.side === 'p' && filter(f));
   const suffixes = families.filter((f) => f.side === 's' && filter(f));
-  const nP = reqs.filter((r) => r.side === 'p').length;
-  const nS = reqs.filter((r) => r.side === 's').length;
+  const main = reqs.filter((r) => !r.group);
+  // slots surely needed: all-required main list + kept modifiers (groups can pick either side)
+  const sure = main.length > 0 && need >= main.length ? main : [];
+  const nP = sure.filter((r) => r.side === 'p').length + taken.p;
+  const nS = sure.filter((r) => r.side === 's').length + taken.s;
+  const groupSize = (g: number) => reqs.filter((r) => (r.group ?? 0) === g).length;
 
   function add(f: Family) {
-    if (reqs.length >= 8) return;
+    if (reqs.length >= 10) return;
     // default: accept the top 3 tiers
     const t = f.tiers[Math.min(2, f.tiers.length - 1)];
     setReqs([...reqs, { fam: f.fam, minLevel: t.l, side: f.side, label: reqLabel(f, t.l) }]);
@@ -46,7 +75,7 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, set
       <h3>{title}</h3>
       <div className="famlist">
         {list.map((f) => (
-          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '') + (f.essence ? ' essence' : '')} onClick={() => add(f)} title="Добавить в цель">
+          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '') + (f.essence ? ' essence' : '')} onClick={() => add(f)} title={`${f.nameEn}\nНажмите, чтобы добавить в цель`}>
             <span>{f.name}</span>
             <span className="muted small">
               {f.tiers.length} тир. · макс. ур. {f.tiers[0].l}
@@ -71,6 +100,7 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, set
               <th>Сторона</th>
               <th>Мод</th>
               <th>Минимальный тир (T1 — лучший)</th>
+              <th title="Моды одной группы взаимозаменяемы: нужно столько из группы, сколько указано ниже">Группа</th>
               <th />
             </tr>
           </thead>
@@ -81,12 +111,21 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, set
               return (
                 <tr key={r.fam}>
                   <td>{r.side === 'p' ? 'Префикс' : 'Суффикс'}</td>
-                  <td>{f.name}</td>
+                  <td title={f.nameEn}>{f.name}</td>
                   <td>
                     <select value={r.minLevel} onChange={(e) => setTier(i, +e.target.value)}>
                       {f.tiers.map((t) => (
-                        <option key={t.id} value={t.l}>
+                        <option key={t.id} value={t.l} title={tierLabelEn(f, t)}>
                           {tierLabel(f, t)}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select value={r.group ?? 0} onChange={(e) => setReqs(reqs.map((x, k) => (k === i ? { ...x, group: +e.target.value } : x)))}>
+                      {GROUPS.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.ru}
                         </option>
                       ))}
                     </select>
@@ -108,17 +147,38 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, open, set
           укажите ниже, что достаточно части из них.
         </div>
       )}
-      {reqs.length > 1 && (
+      {main.length > 1 && (
         <label className="inline">
-          Сколько из них обязательно:
+          Из модов «обязательный» нужно:
           <select value={need} onChange={(e) => setNeed(+e.target.value)}>
-            {reqs.map((_, i) => (
+            {main.map((_, i) => (
               <option key={i} value={i + 1}>
-                {i + 1 === reqs.length ? `все (${i + 1})` : `любые ${i + 1}`}
+                {i + 1 === main.length ? `все (${i + 1})` : `любые ${i + 1}`}
               </option>
             ))}
           </select>
         </label>
+      )}
+      {GROUPS.filter((g) => g.id > 0 && groupSize(g.id) > 0).map((g) => {
+        const n = groupSize(g.id);
+        const v = Math.min(groupNeed[g.id] ?? 1, n);
+        return (
+          <label key={g.id} className="inline">
+            Из {g.ru.replace('группа', 'группы')} ({n}) нужно:
+            <select value={v} onChange={(e) => setGroupNeed({ ...groupNeed, [g.id]: +e.target.value })}>
+              {Array.from({ length: n }, (_, i) => (
+                <option key={i} value={i + 1}>
+                  {i + 1 === n ? `все (${i + 1})` : `любой ${i + 1}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        );
+      })}
+      {reqs.length > 0 && (
+        <p className="muted small">
+          Группы — для «подойдёт любой из»: например, поставьте сопротивления огню, холоду и молнии в «группу А» и выберите «любой 1».
+        </p>
       )}
       <div className="row">
         <label className="inline" title="Свободное место нужно, чтобы потом добавить мод оменом, эссенцией или сплавом">

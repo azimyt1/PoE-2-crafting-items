@@ -64,12 +64,16 @@ export interface TargetReq {
   minLevel: number;
   side: Side;
   label: string;
+  /** requirement group: 0 = main list (Target.need applies), others use Target.groupNeed */
+  group?: number;
 }
 
 export interface Target {
   reqs: TargetReq[];
-  /** how many of reqs must be on the item (default: all) */
+  /** how many of the main group (group 0) must be on the item */
   need: number;
+  /** other groups: how many of each group must be on the item (default: all of it) */
+  groupNeed?: Record<string, number>;
   /** free prefix / suffix slots the finished rare item must keep (for later crafting) */
   open?: { p: number; s: number };
 }
@@ -96,6 +100,11 @@ export interface Ctx {
   essences: EssenceDef[];
   /** modifiers that only essences / alloys add on this base (can be targets) */
   essenceMods: ModDef[];
+  /**
+   * Crafting a bought item: "start over" means buying the same item again
+   * (at baseCost) instead of crafting a fresh base.
+   */
+  restartItem?: Item;
 }
 
 export type OmenName =

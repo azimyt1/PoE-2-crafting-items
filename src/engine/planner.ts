@@ -10,7 +10,7 @@
 import { actionCost, hasPrice } from './currency';
 import { essencesForBase, type EssenceOption } from './essences';
 import { outcomes, isValid, type Classifier, type Outcome } from './actions';
-import { AbstractModel, type AbsEssence, type AbsState, type Fixed } from './abstract';
+import { AbstractModel, FX_BLK, FX_JP, FX_JS, MAX_REQS, type AbsEssence, type AbsState, type Fixed } from './abstract';
 import { analyze, modMatchesReq, modOf } from './item';
 import type { Action, BoneTier, Ctx, FluxKind, Item, ModDef, OmenName, OrbTier, Strategy, Target } from './types';
 
@@ -51,7 +51,7 @@ export class Planner {
   private absEssences: AbsEssence[];
 
   constructor(ctx: Ctx, target: Target, strategy: Strategy) {
-    if (target.reqs.length > 8) throw new Error('Не больше 8 желаемых модов');
+    if (target.reqs.length > MAX_REQS) throw new Error(`Не больше ${MAX_REQS} модов в цели (вместе с сохраняемыми модами предмета)`);
     this.ctx = ctx;
     this.target = target;
     this.strategy = strategy;
@@ -108,8 +108,8 @@ export class Planner {
     const nFrac = popcount(fixed.fracMet) + popcount(fixed.fracBlk) + fixed.fracJ.p + fixed.fracJ.s;
     if (nFrac === 1) {
       if (fixed.fracMet) s.fx = 1 + Math.log2(fixed.fracMet);
-      else if (fixed.fracBlk) s.fx = 11 + Math.log2(fixed.fracBlk);
-      else s.fx = fixed.fracJ.p ? 9 : 10;
+      else if (fixed.fracBlk) s.fx = FX_BLK + Math.log2(fixed.fracBlk);
+      else s.fx = fixed.fracJ.p ? FX_JP : FX_JS;
       return { s, fixed: { fracMet: 0, fracBlk: 0, fracJ: { p: 0, s: 0 } } };
     }
     return { s, fixed };
@@ -121,7 +121,8 @@ export class Planner {
     const needs = (m: AbstractModel) => !start || m.valueOf(start) !== undefined;
     if (!entry || !needs(entry.model)) {
       const starts = [...(entry?.starts ?? []), ...(start ? [start] : [])];
-      const model = new AbstractModel(this.ctx, this.target, this.strategy, this.classify, this.absEssences, fixed, starts);
+      const restart = this.ctx.restartItem ? this.project(this.ctx.restartItem).s : undefined;
+      const model = new AbstractModel(this.ctx, this.target, this.strategy, this.classify, this.absEssences, fixed, starts, restart);
       entry = { model, starts };
       this.models.set(key, entry);
     }
@@ -141,8 +142,9 @@ export class Planner {
   }
 
   /** Expected cost from a fresh normal base (excluding buying it). */
+  /** Expected cost after starting over (from a fresh base, or from the bought item again). */
   get h0(): number {
-    return this.H({ rarity: 'normal', mods: [] });
+    return this.H(this.ctx.restartItem ?? { rarity: 'normal', mods: [] });
   }
 
   get restartCost(): number {
@@ -211,7 +213,7 @@ export class Planner {
           for (const o of sets) out.push({ kind: 'essence', essence: { name: e.name, modIds: e.mods.map((m) => m.id), rare: true }, omens: o });
         }
       }
-      if (a.fracture) out.push({ kind: 'fracture' });
+      if (a.fracture && !this.ctx.restartItem) out.push({ kind: 'fracture' });
       if (a.chaos)
         for (const t of this.tiers) {
           out.push({ kind: 'chaos', tier: t });

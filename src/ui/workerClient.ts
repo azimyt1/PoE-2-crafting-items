@@ -22,8 +22,8 @@ export class WorkerClient {
     this.worker.onmessage = (ev: MessageEvent<WorkerResponse>) => this.onMessage(ev.data);
   }
 
-  init(mods: ModDef[], bases: BaseDef[]): Promise<void> {
-    this.send({ type: 'init', mods, bases });
+  init(mods: ModDef[], bases: BaseDef[], ru?: Record<string, string>): Promise<void> {
+    this.send({ type: 'init', mods, bases, ...(ru ? { ru } : {}) });
     return this.readyPromise;
   }
 
@@ -69,8 +69,8 @@ export class WorkerClient {
     });
   }
 
-  evaluate(setup: Setup, trials: number, onStrategy: (r: StrategyResult) => void): Promise<void> {
-    return this.request<void>((id) => ({ type: 'evaluate', id, setup, trials }), onStrategy);
+  evaluate(setup: Setup, trials: number, start: Item | null, onStrategy: (r: StrategyResult) => void): Promise<void> {
+    return this.request<void>((id) => ({ type: 'evaluate', id, setup, trials, ...(start ? { start } : {}) }), onStrategy);
   }
 
   advise(setup: Setup, strategyId: string, item: Item, trials: number): Promise<Advice> {

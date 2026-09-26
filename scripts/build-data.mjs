@@ -218,15 +218,32 @@ async function main() {
     const [ruStats, ruItems] = await Promise.all([loadEe2('ru/stats.ndjson', ee2Dir), loadEe2('ru/items.ndjson', ee2Dir)]);
     const known = new Set(outMods.flatMap((m) => m.x.split('\n').map(template)));
     const templates = {};
+    // English template -> Russian line for display ("#" = value), first matcher wins
+    const display = {};
     for (const e of ndjson(ruStats)) {
       const en = template(e.ref || '');
       if (!known.has(en)) continue;
-      for (const m of e.matchers || []) if (m.string && !m.negate) templates[template(m.string)] = en;
+      for (const m of e.matchers || []) {
+        if (!m.string || m.negate) continue;
+        templates[template(m.string)] = en;
+        if (!(en in display)) display[en] = m.string;
+      }
     }
     const baseNames = new Set(bases.map((b) => b.name));
     const ruBases = {};
     for (const it of ndjson(ruItems)) if (it.namespace === 'ITEM' && baseNames.has(it.refName) && it.name) ruBases[it.name] = it.refName;
-    await fs.writeFile(path.join(OUT, 'ru.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', templates, bases: ruBases }));
+    await fs.writeFile(path.join(OUT, 'ru.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', templates, display, bases: ruBases }));
+
+    // Crafting items (currency, omens, essences, bones...): Russian name and icon
+    const [enItems] = await Promise.all([loadEe2('en/items.ndjson', ee2Dir)]);
+    const currency = {};
+    const CRAFT = new Set(['Currency', 'Omen']);
+    for (const it of ndjson(enItems))
+      if (it.namespace === 'ITEM' && it.craftable && CRAFT.has(it.craftable.category) && it.refName)
+        currency[it.refName] = { icon: it.icon || undefined };
+    for (const it of ndjson(ruItems)) if (currency[it.refName] && it.name) currency[it.refName].ru = it.name;
+    await fs.writeFile(path.join(OUT, 'currency.json'), JSON.stringify({ source: 'Exiled Exchange 2 (MIT)', items: currency }));
+    console.log(`Currency: ${Object.keys(currency).length} crafting items with icons and Russian names`);
     console.log(`Russian: ${Object.keys(templates).length} line templates, ${Object.keys(ruBases).length} base names`);
   } catch (e) {
     console.warn(`Russian data skipped: ${e.message}`);

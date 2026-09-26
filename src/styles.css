@@ -468,3 +468,89 @@ code {
   gap: 6px;
   margin: 8px 0;
 }
+
+/* current item */
+.current-item .row {
+  justify-content: space-between;
+}
+.current-item .props {
+  margin-top: 6px;
+  color: var(--muted);
+}
+.current-item .implicit {
+  margin-top: 6px;
+  color: var(--magic);
+}
+.current-item .rune {
+  margin-top: 6px;
+  color: var(--gold2);
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+.curmods {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.curmods li {
+  padding: 3px 0;
+}
+.curmods li.fractured {
+  color: var(--gold2);
+}
+.curmods li.desecrated {
+  color: var(--desecrated);
+}
+
+/* crafting item icons */
+.item-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex: none;
+}
+.item-icon.placeholder {
+  display: inline-block;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+}
+button.currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+}
+button.currency .cname {
+  font-weight: 600;
+}
+.sbomens .omen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.92em;
+}
+.sbomens .omen.on {
+  border-color: var(--gold);
+  background: var(--card2);
+}
+.price .pname {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.price .pname .en {
+  display: block;
+  font-size: 0.85em;
+}

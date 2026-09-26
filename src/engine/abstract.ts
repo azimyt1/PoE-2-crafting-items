@@ -15,6 +15,7 @@
 
 import { BONE_LEVELS, MIN_MOD_LEVEL, actionCost, canDesecrate, hasPrice } from './currency';
 import type { Classifier } from './actions';
+import { targetGroups } from './item';
 import type { Action, BoneTier, Ctx, OmenName, OrbTier, Side, Strategy, Target } from './types';
 
 /** Desecrated modifier: 0 none, 1 unwanted prefix, 2 unwanted suffix, 3 other (wanted/blocker) */
@@ -27,7 +28,7 @@ interface S {
   jp: number;
   js: number;
   de: De;
-  /** modifier fractured inside the model (Fracturing Orb): 0 none, 1+i wanted req i, 9 unwanted prefix, 10 unwanted suffix, 11+i blocker of req i */
+  /** modifier fractured inside the model (Fracturing Orb): 0 none, 1+i wanted req i, FX_JP / FX_JS unwanted prefix / suffix, FX_BLK+i blocker of req i */
   fx: number;
 }
 
@@ -46,9 +47,11 @@ interface ClassW {
 
 const TIERS: OrbTier[] = [0, 1, 2];
 const BONES: BoneTier[] = ['Gnawed', 'Preserved', 'Ancient'];
-const FX_JP = 9;
-const FX_JS = 10;
-const FX_BLK = 11;
+/** wanted modifiers per target (bit masks) */
+export const MAX_REQS = 10;
+export const FX_JP = MAX_REQS + 1;
+export const FX_JS = MAX_REQS + 2;
+export const FX_BLK = MAX_REQS + 3;
 const FRESH = { met: 0, blk: 0, jp: 0, js: 0, de: 0 as De, fx: 0 };
 
 function popcount(x: number): number {
@@ -86,6 +89,7 @@ export class AbstractModel {
   readonly best: Int32Array;
   private trans: Tr[][] = [];
   private R: number;
+  private groups: { mask: number; need: number }[];
   private sideMask = { p: 0, s: 0 };
   private classCache = new Map<string, ClassW>();
 
@@ -97,8 +101,11 @@ export class AbstractModel {
     private essences: AbsEssence[],
     readonly fixed: Fixed,
     starts: S[],
+    /** where "start over" leads: a fresh base, or the bought item again */
+    private restartState: S = { r: 0, ...FRESH },
   ) {
     this.R = target.reqs.length;
+    this.groups = targetGroups(target).map((g) => ({ mask: g.idx.reduce((m, i) => m | (1 << i), 0), need: g.need }));
     target.reqs.forEach((r, i) => (this.sideMask[r.side] |= 1 << i));
     // BFS over reachable states
     const queue: number[] = [];
@@ -113,10 +120,10 @@ export class AbstractModel {
       }
       return i;
     };
-    add({ r: 0, ...FRESH });
+    add(this.restartState);
     for (const s of starts) add(s);
-    while (queue.length) {
-      const i = queue.shift()!;
+    for (let head = 0; head < queue.length; head++) {
+      const i = queue[head];
       const s = this.states[i];
       const list: Tr[] = [];
       if (!this.isGoal(s)) {
@@ -147,11 +154,12 @@ export class AbstractModel {
   }
 
   key(s: S): number {
-    return (((((s.r * 256 + s.met) * 256 + s.blk) * 8 + s.jp) * 8 + s.js) * 4 + s.de) * 32 + s.fx;
+    const B = 1 << MAX_REQS;
+    return (((((s.r * B + s.met) * B + s.blk) * 8 + s.jp) * 8 + s.js) * 4 + s.de) * 32 + s.fx;
   }
 
   isGoal(s: S): boolean {
-    if (popcount(s.met) < this.target.need) return false;
+    for (const g of this.groups) if (popcount(s.met & g.mask) < g.need) return false;
     const open = this.target.open;
     if (!open || (open.p <= 0 && open.s <= 0)) return true;
     if (s.r !== 2) return false;
@@ -230,7 +238,8 @@ export class AbstractModel {
           const sets = e.crystal ? omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation') : [[]];
           for (const o of sets) out.push({ kind: 'essence', essence: { name: e.name, modIds: [], rare: true, ref: k }, omens: o });
         });
-      if (a.fracture && !this.fractured(s) && this.modCount(s) >= 4) out.push({ kind: 'fracture' });
+      // not planned for a bought item: every fracture outcome multiplies the states, and it is rarely worth it there
+      if (a.fracture && !this.ctx.restartItem && !this.fractured(s) && this.modCount(s) >= 4) out.push({ kind: 'fracture' });
       if (a.chaos)
         for (const t of tiers) {
           out.push({ kind: 'chaos', tier: t });
@@ -249,7 +258,7 @@ export class AbstractModel {
       }
       if (a.desecrate && canDesecrate(this.ctx.base)) for (const b of BONES) for (const o of omenSets('Omen of Sinistral Necromancy', 'Omen of Dextral Necromancy')) out.push({ kind: 'desecrate', bone: b, omens: o });
     }
-    if (a.restart && s.r !== 0) out.push({ kind: 'restart' });
+    if (a.restart && s.r !== 0 && this.key(s) !== this.key(this.restartState)) out.push({ kind: 'restart' });
     return out.filter((x) =>
       x.kind === 'essence'
         ? Number.isFinite(this.ctx.prices[x.essence!.name]) && (x.omens ?? []).every((o) => Number.isFinite(this.ctx.prices[o]))
@@ -342,7 +351,7 @@ export class AbstractModel {
     const side = (l: OmenName, r: OmenName): Side | undefined => (om(l) ? 'p' : om(r) ? 's' : undefined);
     switch (a.kind) {
       case 'restart':
-        return [{ p: 1, s: { r: 0, ...FRESH } }];
+        return [{ p: 1, s: this.restartState }];
       case 'transmute': {
         const base: S = { r: 1, ...FRESH };
         return this.addDist(base, this.cap(1), this.classes(MIN_MOD_LEVEL.transmute[tier], Infinity, false));
@@ -498,12 +507,32 @@ export class AbstractModel {
     const n = this.states.length;
     const V = this.V;
     const goal = this.states.map((s) => this.isGoal(s));
+    // States that cannot reach the goal at all (e.g. a needed modifier lost
+    // with no way back when starting over is off) are dead ends: fix their
+    // value, otherwise it grows every sweep and never converges.
+    const rev: number[][] = Array.from({ length: n }, () => []);
+    for (let i = 0; i < n; i++) for (const t of this.trans[i]) for (let k = 0; k < t.to.length; k++) if (t.p[k] > 0) rev[t.to[k]].push(i);
+    const alive = new Uint8Array(n);
+    const stack: number[] = [];
+    for (let i = 0; i < n; i++) if (goal[i]) (alive[i] = 1), stack.push(i);
+    while (stack.length) for (const j of rev[stack.pop()!]) if (!alive[j]) (alive[j] = 1), stack.push(j);
     V.fill(0);
+    for (let i = 0; i < n; i++) if (!alive[i]) V[i] = 1e12;
+    // Loops with a small chance of progress (exalt into the one free slot,
+    // annul the miss, repeat) make plain value iteration crawl: values grow by
+    // one step cost per sweep. When the per-sweep changes decay at a steady
+    // rate r, jump ahead by the remaining geometric sum (r / (1 - r) more
+    // sweeps' worth). Iteration then continues, so the result stays exact.
+    const prev = new Float64Array(n);
+    let lastS = 0;
+    let lastR = 0;
+    let cool = 0;
     for (let iter = 0; iter < 5000; iter++) {
       let maxRel = 0;
+      prev.set(V);
       // Gauss-Seidel sweep from the deepest states (closest to the goal) back to the start
       for (let i = n - 1; i >= 0; i--) {
-        if (goal[i]) continue;
+        if (goal[i] || !alive[i]) continue;
         let bestV = Infinity;
         let bestA = -1;
         const list = this.trans[i];
@@ -529,6 +558,20 @@ export class AbstractModel {
         const rel = Math.abs(bestV - old) / Math.max(1, bestV);
         if (rel > maxRel) maxRel = rel;
       }
+      let S = 0;
+      for (let i = 0; i < n; i++) if (alive[i] && !goal[i]) S += V[i] - prev[i];
+      if (cool > 0) cool--;
+      else if (lastS > 0 && S > 0) {
+        const r = S / lastS;
+        if (r > 0.5 && r < 0.9999 && Math.abs(r - lastR) < 0.002) {
+          const f = Math.min(r / (1 - r), 5000);
+          for (let i = 0; i < n; i++) if (alive[i] && !goal[i]) V[i] += (V[i] - prev[i]) * f;
+          cool = 5;
+          maxRel = 1;
+        }
+        lastR = r;
+      }
+      lastS = S;
       if (maxRel < 1e-5) break;
     }
   }

@@ -259,3 +259,15 @@ Note: ~b/o 1 chaos
     expect(p.unmatched).toEqual([]);
   });
 });
+
+describe('Russian display text', () => {
+  it('translates modifier lines keeping values and ranges', async () => {
+    const { setRuDisplay, ruLine, ruText } = await import('./ruText');
+    setRuDisplay((ru as RuData & { display: Record<string, string> }).display);
+    expect(ruLine('+(60-69) to maximum Life')).toBe('+(60-69) к максимуму здоровья');
+    expect(ruLine('+28% to Fire Resistance')).toBe('+28% к сопротивлению огню');
+    expect(ruText('(33-38)% increased Energy Shield\n+(21-25) to maximum Energy Shield')).toMatch(/энергетического щита.* \/ .*энергетическому щиту|энергетического щита/);
+    // unknown lines stay in English
+    expect(ruLine('Something unknown 5')).toBe('Something unknown 5');
+  });
+});
