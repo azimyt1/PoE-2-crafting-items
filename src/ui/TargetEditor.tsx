@@ -44,11 +44,12 @@ export function TargetEditor({ families, reqs, setReqs, need, setNeed, rareCap }
       <h3>{title}</h3>
       <div className="famlist">
         {list.map((f) => (
-          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '')} onClick={() => add(f)} title="Добавить в цель">
+          <button key={f.fam} className={'fam' + (f.desecrated ? ' desecrated' : '') + (f.essence ? ' essence' : '')} onClick={() => add(f)} title="Добавить в цель">
             <span>{f.name}</span>
             <span className="muted small">
               {f.tiers.length} тир. · макс. ур. {f.tiers[0].l}
               {f.desecrated ? ' · только очернение' : ''}
+              {f.essence ? ' · только эссенция или сплав' : ''}
             </span>
           </button>
         ))}

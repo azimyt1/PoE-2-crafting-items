@@ -12,6 +12,7 @@
   --magic: #8888ff;
   --rare: #ffff77;
   --desecrated: #b07fd9;
+  --essence: #6fc3c9;
   color-scheme: dark;
 }
 
@@ -266,6 +267,12 @@ tr.best td {
 }
 .fam.desecrated span:first-child {
   color: var(--desecrated);
+}
+.fam.essence {
+  border-color: #2f5557;
+}
+.fam.essence span:first-child {
+  color: var(--essence);
 }
 
 .reqs select {

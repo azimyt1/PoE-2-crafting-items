@@ -36,9 +36,9 @@ jobs:
       - name: Refresh game data (RePoE)
         run: npm run data
         continue-on-error: true
-      - name: Refresh mod weights (Craft of Exile, once a day)
+      - name: Refresh mod weights and essences (Craft of Exile, once a day)
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ] || [ "$(date -u +%H)" = "04" ]; then npm run weights; else echo "Skipped: weights are refreshed once a day"; fi
+          if [ "${{ github.event_name }}" != "schedule" ] || [ "$(date -u +%H)" = "04" ]; then npm run coe; else echo "Skipped: Craft of Exile data is refreshed once a day"; fi
         continue-on-error: true
       - name: Fetch prices (poe.ninja)
         run: npm run prices

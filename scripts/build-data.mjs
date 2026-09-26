@@ -163,9 +163,14 @@ async function main() {
     if (m.domain !== 'item' && m.domain !== 'desecrated') continue;
     if (m.generation_type !== 'prefix' && m.generation_type !== 'suffix') continue;
     const w = compactWeights(m.spawn_weights || []);
-    if (!w.some(([, x]) => x > 0)) continue;
-    // Must be able to spawn on at least one supported base.
-    if (!baseTagSets.some((tags) => weightFor(w, tags) > 0)) continue;
+    // Essence and alloy modifiers never roll naturally (weight 0) but can be
+    // added by essences and alloys (see scripts/build-coe.mjs).
+    const essenceOnly = m.domain === 'item' && /^(Essence|Alloy)/.test(id) && !w.some(([, x]) => x > 0);
+    if (!essenceOnly) {
+      if (!w.some(([, x]) => x > 0)) continue;
+      // Must be able to spawn on at least one supported base.
+      if (!baseTagSets.some((tags) => weightFor(w, tags) > 0)) continue;
+    }
     const stats = (m.stats || []).map((s) => s.id);
     const side = m.generation_type === 'prefix' ? 'p' : 's';
     outMods.push({
@@ -179,6 +184,7 @@ async function main() {
       w,
       tg: m.implicit_tags || [],
       d: m.domain === 'desecrated' ? 1 : 0,
+      ...(essenceOnly ? { e: 1 } : {}),
       st: (m.stats || []).map((s) => [s.min, s.max]),
     });
   }

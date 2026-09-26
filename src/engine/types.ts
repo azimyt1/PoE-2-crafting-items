@@ -24,6 +24,8 @@ export interface ModDef {
   tg: string[];
   /** 1 = desecrated-only modifier (Abyss lords) */
   d: 0 | 1;
+  /** 1 = only added by essences / alloys, never rolls */
+  e?: 1;
   /** stat ranges */
   st: [number, number][];
 }
@@ -88,6 +90,10 @@ export interface Ctx {
   baseCost: number;
   /** groups of every family, used to detect blockers */
   famGroups: Map<string, Set<string>>;
+  /** essences and alloys usable on this base (exact table from Craft of Exile) */
+  essences: EssenceDef[];
+  /** modifiers that only essences / alloys add on this base (can be targets) */
+  essenceMods: ModDef[];
 }
 
 export type OmenName =
@@ -125,13 +131,27 @@ export type ActionKind =
 /** 0 = normal orb, 1 = Greater, 2 = Perfect */
 export type OrbTier = 0 | 1 | 2;
 
+/** One essence or alloy on a base group, as in public/data/essences.json */
+export interface EssenceDef {
+  /** full item name, e.g. "Greater Essence of the Body" */
+  n: string;
+  /** 1 = used on rare items: removes a random modifier first (Perfect, corrupted essences, alloys) */
+  r: 0 | 1;
+  /** 1 = Omens of Crystallisation apply */
+  c: 0 | 1;
+  /** modifier ids; the essence adds one of them */
+  m: string[];
+}
+
 export interface EssenceUse {
   /** full item name, e.g. "Greater Essence of the Body" */
   name: string;
-  /** modifier id guaranteed on this base */
-  modId: string;
-  /** Perfect Essence: used on a rare item, removes a random modifier first */
-  perfect?: boolean;
+  /** modifiers it can add on this base (one of them, at random) */
+  modIds: string[];
+  /** used on a rare item, removes a random modifier first */
+  rare?: boolean;
+  /** abstract model only: index of the essence in its own table */
+  ref?: number;
 }
 
 export type BoneTier = 'Gnawed' | 'Preserved' | 'Ancient';

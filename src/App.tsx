@@ -3,7 +3,7 @@ import type { Setup, StrategyResult } from './api';
 import { DEFAULT_PRICES } from './engine/currency';
 import { DEFAULT_ESSENCE_PRICES } from './engine/essences';
 import { buildCtx } from './engine/item';
-import type { BaseDef, Item, ModDef, Prices, TargetReq } from './engine/types';
+import type { BaseDef, EssenceDef, Item, ModDef, Prices, TargetReq } from './engine/types';
 import { familiesOf } from './ui/families';
 import type { DisplayCurrency } from './ui/format';
 import { ItemSetup } from './ui/ItemSetup';
@@ -29,6 +29,12 @@ interface WeightsFile {
   builtAt: string;
   groups: Record<string, Record<string, number>>;
   bases: Record<string, string>;
+}
+
+/** Exact essence table (Craft of Exile), built by scripts/build-coe.mjs */
+interface EssencesFile {
+  bases: Record<string, string>;
+  groups: Record<string, EssenceDef[]>;
 }
 
 interface Saved {
@@ -66,6 +72,7 @@ export default function App() {
     pricesFile: PricesFile | null;
     ru: RuData | null;
     weights: WeightsFile | null;
+    essences: EssencesFile | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -120,7 +127,13 @@ export default function App() {
         } catch {
           weightsFile = null;
         }
-        setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile });
+        let essencesFile: EssencesFile | null = null;
+        try {
+          essencesFile = await get('essences.json');
+        } catch {
+          essencesFile = null;
+        }
+        setData({ bases, mods, meta, pricesFile, ru, weights: weightsFile, essences: essencesFile });
         setPricesFile(pricesFile);
         const c = new WorkerClient();
         client.current = c;
@@ -208,10 +221,15 @@ export default function App() {
   }, [data, base]);
   const effWeights = useMemo(() => ({ ...community.weights, ...weights }), [community, weights]);
 
+  const essences = useMemo(() => {
+    const group = base && data?.essences?.bases[base.name];
+    return (group && data?.essences?.groups[group]) || [];
+  }, [data, base]);
+
   const ctx = useMemo(() => {
     if (!data || !base) return null;
-    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: effWeights });
-  }, [data, base, ilvl, prices, baseCost, effWeights]);
+    return buildCtx({ base, ilvl, mods: data.mods, prices, baseCost, weightOverrides: effWeights, essences });
+  }, [data, base, ilvl, prices, baseCost, effWeights, essences]);
 
   const families = useMemo(() => (ctx ? familiesOf(ctx) : []), [ctx]);
 
@@ -226,8 +244,8 @@ export default function App() {
 
   const setup: Setup | null = useMemo(() => {
     if (!base || !reqs.length) return null;
-    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights: effWeights };
-  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, effWeights]);
+    return { baseId: base.id, ilvl, target: { reqs, need: effectiveNeed }, prices, baseCost, weights: effWeights, essences };
+  }, [base, ilvl, reqs, effectiveNeed, prices, baseCost, effWeights, essences]);
 
   const setupKey = setup ? JSON.stringify(setup) : '';
 

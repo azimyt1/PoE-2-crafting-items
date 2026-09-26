@@ -60,6 +60,16 @@ function popcount(x: number): number {
   return c;
 }
 
+/** An essence as the abstract model sees it: the planner class ('h'/'b'/'x' + index or side) of each alternative. */
+export interface AbsEssence {
+  name: string;
+  /** used on rare items, removes a random modifier first */
+  rare: boolean;
+  /** Omens of Crystallisation apply */
+  crystal: boolean;
+  outs: string[];
+}
+
 export interface Fixed {
   /** wanted mods that are fractured (cannot be removed) */
   fracMet: number;
@@ -84,7 +94,7 @@ export class AbstractModel {
     private target: Target,
     private strategy: Strategy,
     private classify: Classifier,
-    private essenceReqs: { name: string; req: number; perfect: boolean }[],
+    private essences: AbsEssence[],
     readonly fixed: Fixed,
     starts: S[],
   ) {
@@ -200,7 +210,7 @@ export class AbstractModel {
     } else if (s.r === 1) {
       if (a.augment) for (const t of tiers) out.push({ kind: 'augment', tier: t });
       if (a.regal) for (const t of tiers) for (const o of omenSets('Omen of Sinistral Coronation', 'Omen of Dextral Coronation')) out.push({ kind: 'regal', tier: t, omens: o });
-      if (a.essence) for (const e of this.essenceReqs) if (!e.perfect) out.push({ kind: 'essence', essence: { name: e.name, modId: String(e.req) } });
+      if (a.essence) this.essences.forEach((e, k) => !e.rare && out.push({ kind: 'essence', essence: { name: e.name, modIds: [], ref: k } }));
       if (a.annul) out.push({ kind: 'annul' });
     } else {
       if (a.exalt)
@@ -210,10 +220,11 @@ export class AbstractModel {
             if (a.omens) out.push({ kind: 'exalt', tier: t, omens: ['Omen of Greater Exaltation', ...o] });
           }
       if (a.essence)
-        for (const e of this.essenceReqs)
-          if (e.perfect)
-            for (const o of omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation'))
-              out.push({ kind: 'essence', essence: { name: e.name, modId: String(e.req), perfect: true }, omens: o });
+        this.essences.forEach((e, k) => {
+          if (!e.rare) return;
+          const sets = e.crystal ? omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation') : [[]];
+          for (const o of sets) out.push({ kind: 'essence', essence: { name: e.name, modIds: [], rare: true, ref: k }, omens: o });
+        });
       if (a.fracture && !this.fractured(s) && this.modCount(s) >= 4) out.push({ kind: 'fracture' });
       if (a.chaos)
         for (const t of tiers) {
@@ -300,6 +311,26 @@ export class AbstractModel {
     return use.map((c) => ({ p: c.w / tot, s: c.f(s) }));
   }
 
+  /** states after an essence adds one of its alternatives (those that fit, uniformly) */
+  private essenceAdds(s: S, outs: string[]): S[] {
+    const cap = this.cap(2);
+    const res: S[] = [];
+    for (const c of outs) {
+      if (c[0] === 'x') {
+        const sd = c[1] as Side;
+        if (this.used(s, sd) >= cap[sd]) continue;
+        res.push(sd === 'p' ? { ...s, jp: s.jp + 1 } : { ...s, js: s.js + 1 });
+        continue;
+      }
+      const i = +c.slice(1);
+      const bit = 1 << i;
+      const sd = this.target.reqs[i].side;
+      if ((s.met | s.blk) & bit || this.used(s, sd) >= cap[sd]) continue;
+      res.push(c[0] === 'h' ? { ...s, met: s.met | bit } : { ...s, blk: s.blk | bit });
+    }
+    return res;
+  }
+
   private transitions(s: S, a: Action): { p: number; s: S }[] {
     const tier = a.tier ?? 0;
     const om = (o: OmenName) => !!a.omens?.includes(o);
@@ -333,23 +364,21 @@ export class AbstractModel {
         return out;
       }
       case 'essence': {
-        const i = +a.essence!.modId;
-        const bit = 1 << i;
-        const sd = this.target.reqs[i].side;
-        const cap = this.cap(2);
-        if (s.met & bit) return [];
-        if (!a.essence!.perfect) {
-          if (s.blk & bit) return [];
-          const next: S = { ...s, r: 2, met: s.met | bit };
-          if (this.used(next, sd) > cap[sd]) return [];
-          return [{ p: 1, s: next }];
+        const e = this.essences[a.essence!.ref!];
+        // essences used on rare items remove a random modifier first (only ones that make room)
+        const rem = e.rare
+          ? this.removeDist(s, { side: side('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation') })
+          : [{ p: 1, s: { ...s, r: 2 as const } }];
+        const out: { p: number; s: S }[] = [];
+        let tot = 0;
+        for (const r of rem) {
+          const adds = this.essenceAdds(r.s, e.outs);
+          if (!adds.length) continue;
+          tot += r.p;
+          for (const x of adds) out.push({ p: r.p / adds.length, s: x });
         }
-        // Perfect Essence: remove a random modifier (only ones that make room), then add the guaranteed one
-        const rem = this.removeDist(s, { side: side('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation') })
-          .filter((r) => !(r.s.blk & bit) && this.used(r.s, sd) < cap[sd]);
-        const tot = rem.reduce((q, r) => q + r.p, 0);
         if (tot <= 0) return [];
-        return rem.map((r) => ({ p: r.p / tot, s: { ...r.s, met: r.s.met | bit } }));
+        return out.map((o) => ({ p: o.p / tot, s: o.s }));
       }
       case 'fracture': {
         const n = this.modCount(s);

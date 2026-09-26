@@ -10,7 +10,7 @@
 import { actionCost, hasPrice } from './currency';
 import { essencesForBase, type EssenceOption } from './essences';
 import { outcomes, isValid, type Classifier, type Outcome } from './actions';
-import { AbstractModel, type AbsState, type Fixed } from './abstract';
+import { AbstractModel, type AbsEssence, type AbsState, type Fixed } from './abstract';
 import { analyze, modMatchesReq, modOf } from './item';
 import type { Action, BoneTier, Ctx, Item, ModDef, OmenName, OrbTier, Strategy, Target } from './types';
 
@@ -48,7 +48,7 @@ export class Planner {
   private dCache = new Map<string, Decision>();
   private tiers: OrbTier[];
   private models = new Map<string, { model: AbstractModel; starts: AbsState[] }>();
-  private essenceReqs: { name: string; req: number; perfect: boolean }[];
+  private absEssences: AbsEssence[];
 
   constructor(ctx: Ctx, target: Target, strategy: Strategy) {
     if (target.reqs.length > 8) throw new Error('Не больше 8 желаемых модов');
@@ -66,10 +66,12 @@ export class Planner {
       }
       return 'x' + m.s;
     };
-    this.essenceReqs = [];
+    // Essences that can add a wanted modifier, with the class of each alternative.
+    this.absEssences = [];
     for (const e of this.essences) {
-      const i = reqs.findIndex((r) => modMatchesReq(e.mod, r));
-      if (i >= 0) this.essenceReqs.push({ name: e.name, req: i, perfect: e.perfect });
+      const outs = e.mods.map((m) => this.classify(m));
+      if (!outs.some((c) => c[0] === 'h')) continue;
+      this.absEssences.push({ name: e.name, rare: e.rare, crystal: e.crystal, outs });
     }
   }
 
@@ -119,7 +121,7 @@ export class Planner {
     const needs = (m: AbstractModel) => !start || m.valueOf(start) !== undefined;
     if (!entry || !needs(entry.model)) {
       const starts = [...(entry?.starts ?? []), ...(start ? [start] : [])];
-      const model = new AbstractModel(this.ctx, this.target, this.strategy, this.classify, this.essenceReqs, fixed, starts);
+      const model = new AbstractModel(this.ctx, this.target, this.strategy, this.classify, this.absEssences, fixed, starts);
       entry = { model, starts };
       this.models.set(key, entry);
     }
@@ -189,9 +191,8 @@ export class Planner {
       if (a.essence) {
         const an = analyze(item, this.ctx, this.target);
         for (const e of this.essences) {
-          if (e.perfect) continue;
-          const useful = this.target.reqs.some((r, i) => !an.met.has(i) && modMatchesReq(e.mod, r));
-          if (useful) out.push({ kind: 'essence', essence: { name: e.name, modId: e.mod.id } });
+          if (e.rare || !this.useful(e, an.met)) continue;
+          out.push({ kind: 'essence', essence: { name: e.name, modIds: e.mods.map((m) => m.id) } });
         }
       }
       if (a.annul) out.push({ kind: 'annul' });
@@ -205,11 +206,9 @@ export class Planner {
       if (a.essence) {
         const an = analyze(item, this.ctx, this.target);
         for (const e of this.essences) {
-          if (!e.perfect) continue;
-          const useful = this.target.reqs.some((r, i) => !an.met.has(i) && modMatchesReq(e.mod, r));
-          if (!useful) continue;
-          for (const o of omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation'))
-            out.push({ kind: 'essence', essence: { name: e.name, modId: e.mod.id, perfect: true }, omens: o });
+          if (!e.rare || !this.useful(e, an.met)) continue;
+          const sets = e.crystal ? omenSets('Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation') : [[]];
+          for (const o of sets) out.push({ kind: 'essence', essence: { name: e.name, modIds: e.mods.map((m) => m.id), rare: true }, omens: o });
         }
       }
       if (a.fracture) out.push({ kind: 'fracture' });
@@ -236,6 +235,11 @@ export class Planner {
     }
     if (a.restart && item.rarity !== 'normal') out.push({ kind: 'restart' });
     return out.filter((x) => hasPrice(x, this.ctx.base, this.ctx.prices) && isValid(item, this.ctx, x));
+  }
+
+  /** The essence can add a wanted modifier that is still missing. */
+  private useful(e: EssenceOption, met: Set<number>): boolean {
+    return e.mods.some((m) => this.target.reqs.some((r, i) => !met.has(i) && modMatchesReq(m, r)));
   }
 
   /** Preference among desecration options for this item (higher = better). */

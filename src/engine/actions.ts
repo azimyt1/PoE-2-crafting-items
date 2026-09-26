@@ -47,23 +47,31 @@ function addFilterFor(_item: Item, a: Action): AddFilter | null {
   }
 }
 
-/** Room for the guaranteed modifier of a Perfect Essence after removing mod `skip`. */
-function essenceFits(item: Item, ctx: Ctx, mod: ModDef, skip: number): boolean {
+/**
+ * Modifiers an essence can add to `item` once it is rare (after removing mod
+ * `skip`, for essences used on rare items). Assumption: the game picks among
+ * the alternatives that fit, uniformly.
+ */
+export function essenceChoices(item: Item, ctx: Ctx, a: Action, skip = -1): ModDef[] {
   const rest: Item = { rarity: 'rare', mods: item.mods.filter((_, k) => k !== skip) };
-  if (openSlots(rest, ctx)[mod.s] <= 0) return false;
+  const open = openSlots(rest, ctx);
   const blocked = new Set(rest.mods.flatMap((im) => modOf(ctx, im).g));
-  return !mod.g.some((g) => blocked.has(g));
+  const out: ModDef[] = [];
+  for (const id of a.essence?.modIds ?? []) {
+    const m = ctx.byId.get(id);
+    if (m && open[m.s] > 0 && !m.g.some((g) => blocked.has(g))) out.push(m);
+  }
+  return out;
 }
 
 /** Mods that the removal part of an action may remove (uniformly). */
 export function removable(item: Item, ctx: Ctx, a: Action): number[] {
   let idx = item.mods.map((_, i) => i).filter((i) => !item.mods[i].fr);
-  if (a.kind === 'essence' && a.essence?.perfect) {
+  if (a.kind === 'essence' && a.essence?.rare) {
     const side = sideOmen(a, 'Omen of Sinistral Crystallisation', 'Omen of Dextral Crystallisation');
     if (side) idx = idx.filter((i) => modOf(ctx, item.mods[i]).s === side);
     // Assumption: the game only removes a modifier that makes room for the new one.
-    const m = ctx.byId.get(a.essence.modId);
-    idx = m ? idx.filter((i) => essenceFits(item, ctx, m, i)) : [];
+    idx = idx.filter((i) => essenceChoices(item, ctx, a, i).length > 0);
   } else if (a.kind === 'annul') {
     if (has(a, 'Omen of Light')) idx = idx.filter((i) => item.mods[i].de);
     const side = sideOmen(a, 'Omen of Sinistral Annulment', 'Omen of Dextral Annulment');
@@ -121,12 +129,8 @@ export function isValid(item: Item, ctx: Ctx, a: Action): boolean {
       return item.rarity !== 'normal' && removable(item, ctx, a).length > 0;
     case 'essence': {
       if (!a.essence) return false;
-      if (a.essence.perfect) return item.rarity === 'rare' && removable(item, ctx, a).length > 0;
-      if (item.rarity !== 'magic') return false;
-      const m = ctx.byId.get(a.essence.modId);
-      if (!m) return false;
-      const blocked = new Set(item.mods.flatMap((im) => modOf(ctx, im).g));
-      return !m.g.some((g) => blocked.has(g));
+      if (a.essence.rare) return item.rarity === 'rare' && removable(item, ctx, a).length > 0;
+      return item.rarity === 'magic' && essenceChoices(item, ctx, a).length > 0;
     }
     case 'desecrate': {
       if (item.rarity !== 'rare') return false;
@@ -201,10 +205,17 @@ export function outcomes(
       return out;
     }
     case 'essence': {
-      const m = ctx.byId.get(a.essence!.modId)!;
-      if (!a.essence!.perfect) return [{ p: 1, item: withMod(item, m, 'rare') }];
+      if (!a.essence!.rare) {
+        const ch = essenceChoices(item, ctx, a);
+        return ch.map((m) => ({ p: 1 / ch.length, item: withMod(item, m, 'rare') }));
+      }
       const idx = removable(item, ctx, a);
-      return idx.map((i) => ({ p: 1 / idx.length, item: withMod(withoutIdx(item, i), m, 'rare') }));
+      const out: Outcome[] = [];
+      for (const i of idx) {
+        const ch = essenceChoices(item, ctx, a, i);
+        for (const m of ch) out.push({ p: 1 / idx.length / ch.length, item: withMod(withoutIdx(item, i), m, 'rare') });
+      }
+      return out;
     }
     case 'fracture':
       return item.mods.map((_, i) => ({
@@ -313,15 +324,20 @@ export function sample(item: Item, ctx: Ctx, a: Action, rng: Rng, prefer?: (m: M
       addRandom(it, ctx, addFilterFor(item, a)!, rng);
       if (has(a, 'Omen of Greater Exaltation')) addRandom(it, ctx, addFilterFor(item, a)!, rng);
       return it;
-    case 'essence':
-      if (a.essence!.perfect) {
+    case 'essence': {
+      let skip = -1;
+      if (a.essence!.rare) {
         const idx = removable(item, ctx, a);
         if (!idx.length) return it;
-        it.mods.splice(idx[Math.floor(rng() * idx.length)], 1);
+        skip = idx[Math.floor(rng() * idx.length)];
       }
+      const ch = essenceChoices(item, ctx, a, skip);
+      if (!ch.length) return it;
+      if (skip >= 0) it.mods.splice(skip, 1);
       it.rarity = 'rare';
-      it.mods.push({ id: a.essence!.modId });
+      it.mods.push({ id: ch[Math.floor(rng() * ch.length)].id });
       return it;
+    }
     case 'fracture': {
       if (!it.mods.length) return it;
       it.mods[Math.floor(rng() * it.mods.length)].fr = true;

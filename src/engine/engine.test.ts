@@ -13,9 +13,16 @@ const mods: ModDef[] = JSON.parse(fs.readFileSync('public/data/mods.json', 'utf8
 const bases: BaseDef[] = JSON.parse(fs.readFileSync('public/data/bases.json', 'utf8'));
 const prices = { ...DEFAULT_PRICES, ...DEFAULT_ESSENCE_PRICES };
 
+const essenceFile = JSON.parse(fs.readFileSync('public/data/essences.json', 'utf8'));
+
 function ctxFor(name: string, ilvl = 82) {
   const base = bases.find((b) => b.name === name)!;
-  return buildCtx({ base, ilvl, mods, prices, baseCost: 1 });
+  const essences = essenceFile.groups[essenceFile.bases[name]] ?? [];
+  return buildCtx({ base, ilvl, mods, prices, baseCost: 1, essences });
+}
+function essenceAction(ctx: ReturnType<typeof ctxFor>, name: string) {
+  const e = essencesForBase(ctx).find((x) => x.name === name)!;
+  return { kind: 'essence' as const, essence: { name: e.name, modIds: e.mods.map((m) => m.id), rare: e.rare } };
 }
 const fam = (id: string) => mods.find((m) => m.id === id)!;
 function req(id: string) {
@@ -81,15 +88,28 @@ describe('new crafting currencies', () => {
     expect(isValid({ rarity: 'rare', mods: lifeRes.mods.slice(0, 3) }, ctx, { kind: 'fracture' })).toBe(false);
   });
 
-  it('perfect essence swaps a random modifier for the guaranteed one', () => {
+  it('essences add the exact modifier of the Craft of Exile table', () => {
     const ctx = ctxFor('Gold Ring');
-    const ess = essencesForBase(ctx).find((e) => e.name === 'Perfect Essence of Grounding')!;
-    const a = { kind: 'essence' as const, essence: { name: ess.name, modId: ess.mod.id, perfect: true } };
+    const body = outcomes({ rarity: 'magic', mods: [] }, ctx, essenceAction(ctx, 'Essence of the Body'));
+    expect(body.map((o) => o.item.mods[0].id)).toEqual(['IncreasedLife6']);
+    expect(body[0].item.rarity).toBe('rare');
+    // no Greater Essence of the Body for rings
+    expect(essencesForBase(ctx).some((e) => e.name === 'Greater Essence of the Body')).toBe(false);
+    // Essence of the Infinite: one of three attributes
+    const inf = outcomes({ rarity: 'magic', mods: [] }, ctx, essenceAction(ctx, 'Essence of the Infinite'));
+    expect(inf).toHaveLength(3);
+    for (const o of inf) expect(o.p).toBeCloseTo(1 / 3, 9);
+  });
+
+  it('rare essence (corrupted) swaps a random modifier for the guaranteed one', () => {
+    const ctx = ctxFor('Gold Ring');
+    const a = essenceAction(ctx, 'Essence of Hysteria');
+    expect(a.essence.rare).toBe(true);
     const outs = outcomes(lifeRes, ctx, a);
     expect(outs.reduce((s, o) => s + o.p, 0)).toBeCloseTo(1, 9);
     for (const o of outs) {
       expect(o.item.mods).toHaveLength(4);
-      expect(o.item.mods.map((m) => m.id)).toContain(ess.mod.id);
+      expect(o.item.mods.map((m) => m.id)).toContain('ManaRegeneration5');
     }
     // Dextral Crystallisation: only suffixes are removed, the life prefix always stays
     const dex = outcomes(lifeRes, ctx, { ...a, omens: ['Omen of Dextral Crystallisation'] });
@@ -115,6 +135,22 @@ describe('new crafting currencies', () => {
     const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 300, maxSteps: 6000, buyFirstBase: true });
     expect(res.successRate).toBeGreaterThan(0.9);
     if (res.successRate > 0.99) expect(Math.abs(res.meanCost - planner.restartCost) / planner.restartCost).toBeLessThan(0.35);
+  });
+});
+
+describe('essence-only modifiers', () => {
+  it('perfect essence reaches a modifier that never rolls', () => {
+    const name = bases.find((b) => b.cls === 'Body Armour' && essenceFile.bases[b.name] === 'Body Armour (STR)')!.name;
+    const ctx = ctxFor(name);
+    const pct = mods.find((m) => m.id === 'EssenceIncreasedLifePercent1')!;
+    expect(pct.e).toBe(1);
+    expect(ctx.essenceMods).toContain(pct);
+    expect(ctx.regular.some((e) => e.mod.id === pct.id)).toBe(false);
+    const target: Target = { reqs: [{ fam: pct.f, minLevel: pct.l, side: pct.s, label: pct.x }, req('IncreasedLife6')], need: 2 };
+    const planner = new Planner(ctx, target, STRATEGIES.find((s) => s.id === 'essence')!);
+    const res = simulate(planner, { rarity: 'normal', mods: [] }, { trials: 200, maxSteps: 6000, buyFirstBase: true });
+    expect(res.successRate).toBeGreaterThan(0.95);
+    expect(res.usage['Perfect Essence of the Body']).toBeGreaterThan(0.9);
   });
 });
 

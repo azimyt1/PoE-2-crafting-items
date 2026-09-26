@@ -4,7 +4,7 @@
 name: Fetch Craft of Exile data
 
 # Manual only (Actions -> Fetch Craft of Exile data -> Run workflow): the
-# weights themselves are refreshed by the deploy workflow (npm run weights).
+# weights themselves are refreshed by the deploy workflow (npm run coe).
 on:
   workflow_dispatch:
 

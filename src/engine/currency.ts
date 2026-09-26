@@ -1,6 +1,7 @@
 // Currency names, rules and placeholder prices.
 // Rules follow Path of Exile 2 patch 0.5.x (game data 4.5.5.2).
 
+import { essenceRu } from './essences';
 import type { Action, BaseDef, BoneTier, OmenName, OrbTier, Prices } from './types';
 
 export const ORB_NAMES: Record<'transmute' | 'augment' | 'regal' | 'exalt' | 'chaos', [string, string, string]> = {
@@ -129,7 +130,7 @@ const TIER_RU = ['', 'Большая ', 'Совершенная '];
 
 export function actionTitleRu(a: Action, base: BaseDef): string {
   let t: string;
-  if (a.kind === 'essence') t = `Эссенция: ${a.essence?.name ?? '?'}`;
+  if (a.kind === 'essence') t = a.essence ? `${essenceRu(a.essence.name)} (${a.essence.name})` : 'Эссенция';
   else if (a.kind === 'desecrate') t = `Очернение костью: ${boneName(base, a.bone ?? 'Preserved')} (выбрать лучший из 3)`;
   else {
     const tier = a.tier ?? 0;

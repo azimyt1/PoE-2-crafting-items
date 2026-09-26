@@ -1,6 +1,6 @@
 // Item model: context construction, affix capacity, modifier pools, analysis.
 
-import type { BaseDef, Ctx, Item, ItemMod, ModDef, PoolEntry, Prices, Side, Target } from './types';
+import type { BaseDef, Ctx, EssenceDef, Item, ItemMod, ModDef, PoolEntry, Prices, Side, Target } from './types';
 
 export const DEFAULT_WEIGHT = 1000;
 
@@ -34,6 +34,7 @@ export function buildCtx(opts: {
   prices: Prices;
   baseCost: number;
   weightOverrides?: Record<string, number>;
+  essences?: EssenceDef[];
 }): Ctx {
   const { base, ilvl, mods, prices, baseCost } = opts;
   const tags = new Set(base.tags);
@@ -56,7 +57,20 @@ export function buildCtx(opts: {
     if (w <= 0) continue;
     (m.d ? lords : regular).push({ mod: m, w });
   }
-  return { base, ilvl, regular, lords, byId, rareCap: rareCapacity(base), prices, baseCost, famGroups };
+  // Essence results: their families are targets too, so they need groups for blocker detection.
+  const essences = opts.essences ?? [];
+  const inPool = new Set([...regular, ...lords].map((e) => e.mod.id));
+  const essenceMods: ModDef[] = [];
+  for (const e of essences)
+    for (const id of e.m) {
+      const m = byId.get(id);
+      if (!m) continue;
+      let g = famGroups.get(m.f);
+      if (!g) famGroups.set(m.f, (g = new Set()));
+      for (const x of m.g) g.add(x);
+      if (!inPool.has(id) && !essenceMods.includes(m)) essenceMods.push(m);
+    }
+  return { base, ilvl, regular, lords, byId, rareCap: rareCapacity(base), prices, baseCost, famGroups, essences, essenceMods };
 }
 
 export function capacity(item: Item, ctx: Ctx): { p: number; s: number } {
